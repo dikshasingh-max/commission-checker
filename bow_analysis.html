@@ -92,6 +92,7 @@
   <div class="tab active" onclick="switchTab('overview')">Overview</div>
   <div class="tab" onclick="switchTab('venues')">Venue Table</div>
   <div class="tab" onclick="switchTab('tier-mix')">Tier Mix Analysis</div>
+  <div class="tab" onclick="switchTab('gov-matrix')">GoV Matrix</div>
   <div class="tab" onclick="switchTab('how-to')">How to Complete</div>
 </div>
 
@@ -218,6 +219,105 @@
       </tbody>
     </table>
     <p style="font-size:0.8em;color:#7f8c8d;">Note: Toggle launched as 50/50 A/B test at reduced percentages due to −0.6% GOV/user impact observed in April testing.</p>
+  </div>
+</div>
+
+<div id="tab-gov-matrix" class="tab-content">
+  <div class="section-box">
+    <h2>GoV by BoW Tier per Country &mdash; All Markets (Restaurants, Last 2 Months)</h2>
+    <p style="font-size:0.82em;color:#7f8c8d;margin:0 0 10px;">
+      Source: BoW tiering thresholds file (May 2026). <strong>T5 = Best of Wolt badge (top), T1 = Limited (bottom).</strong>
+      Last 2 months GoV in euros. Discovery toggle penalties by tier: T5 0% / T4 2% / T3 8% / T2 16% / T1 24%.
+    </p>
+    <div style="overflow-x:auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>Country</th>
+            <th>Total L2M</th>
+            <th style="background:#6B4800;">T5 Best</th>
+            <th style="background:#1a6b3a;">T4 Great</th>
+            <th>T3 Standard</th>
+            <th style="background:#7a4200;">T2 Improve</th>
+            <th style="background:#7a0000;">T1 Limited</th>
+            <th>T4+T5 Share</th>
+          </tr>
+        </thead>
+        <tbody id="summary-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="section-box">
+    <h2>BoW Tier &times; Mx Tier Cross-Tab per Country</h2>
+    <p style="font-size:0.82em;color:#7f8c8d;margin:0 0 10px;">
+      Venue-level subset (venues with active AMs, from BoW thresholds file). <strong>Mx Tier</strong> = Wolt internal commission tier (ENT / Mid Mkt / Tier 1 / Tier 2 / Tier 3).
+      Cell values: GoV &euro;, % of country total, venue count.
+    </p>
+    <div style="margin-bottom:10px;">
+      <label style="font-size:0.85em;font-weight:600;">Country:
+        <select id="matrix-country-sel" onchange="renderCrossTab()">
+          <option value="ALB">ALB &mdash; Albania</option>
+          <option value="AZE">AZE &mdash; Azerbaijan</option>
+          <option value="CYP">CYP &mdash; Cyprus</option>
+          <option value="DEU">DEU &mdash; Germany</option>
+          <option value="DNK">DNK &mdash; Denmark</option>
+          <option value="GEO">GEO &mdash; Georgia</option>
+          <option value="HUN">HUN &mdash; Hungary</option>
+          <option value="ISL">ISL &mdash; Iceland</option>
+          <option value="LTU">LTU &mdash; Lithuania</option>
+          <option value="LUX">LUX &mdash; Luxembourg</option>
+          <option value="LVA">LVA &mdash; Latvia</option>
+          <option value="MLT">MLT &mdash; Malta</option>
+          <option value="NOR">NOR &mdash; Norway</option>
+          <option value="POL">POL &mdash; Poland</option>
+          <option value="SVK">SVK &mdash; Slovakia</option>
+          <option value="XKX">XKX &mdash; Kosovo</option>
+        </select>
+      </label>
+    </div>
+    <div id="crosstab-container"></div>
+    <div class="insight-box" id="crosstab-insight" style="margin-top:8px;font-size:0.85em;"></div>
+  </div>
+
+  <div class="section-box">
+    <h2>Mix Shift Summary &amp; Key Findings</h2>
+    <div class="insight-box" style="background:#e8f8f0;border-color:#27ae60;">
+      <strong>Post-BoW tier mix observations (May 2026):</strong>
+      <ul style="margin:6px 0 0 16px;padding:0;font-size:0.88em;line-height:1.7;">
+        <li><strong>WBR commission tailwind (+14.7 bps):</strong> Wolt-wide Tier 3 (SMB) running +3.3pp above plan at 22.1% of GoV. BoW creates incentive for SMB venues to improve quality, increasing T3-commission-rate volume share.</li>
+        <li><strong>DNK ENT at risk:</strong> 878K ENT GoV in BoW T1 (Limited) in the AM-account sample &mdash; these venues face 24% discovery visibility reduction in the live A/B toggle test.</li>
+        <li><strong>POL ENT struggling:</strong> 54% of ENT GoV (248K) in BoW T1 Limited, 35% in T2 Improve. Only 0% in top tiers. High commission risk if discovery penalty converts to volume loss.</li>
+        <li><strong>AZE ENT just below top tier:</strong> 71% of AZE ENT GoV in BoW T4 (Great). ENT performing well but missing the T5 Best badge.</li>
+        <li><strong>ALB ENT at T3 Standard:</strong> All ENT GoV at Standard tier &mdash; no pilot-market ENT venue has achieved Best of Wolt badge.</li>
+        <li><strong>Best BoW GoV concentration:</strong> CYP 35.2%, GEO 38.4%, DNK 33.3%, DEU 23.9% of total L2M GoV in T5 (Best). Larger markets concentrating more GoV in top tier.</li>
+        <li><strong>Pre/post comparison note:</strong> Direct pre-vs-post BoW GoV by tier not available in this dataset. The live A/B toggle test shows &minus;0.65% GoV per user (stat-sig, p=0.045). 12-week geo causal analysis (Q3 2026) will show net GoV impact including merchant behaviour change upside.</li>
+      </ul>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-top:12px;">
+      <div class="pilot-card" style="border-color:#B8860B;">
+        <div style="font-weight:700;color:#B8860B;font-size:1.05em;">Highest T4+T5 Share</div>
+        <div style="font-size:0.83em;margin-top:6px;line-height:1.8;">
+          XKX 66.0% &bull; DNK 64.6% &bull; GEO 64.1%<br>
+          CYP 57.3% &bull; ALB 52.8% &bull; MLT 52.2%
+        </div>
+      </div>
+      <div class="pilot-card" style="border-color:#c0392b;">
+        <div style="font-weight:700;color:#c0392b;font-size:1.05em;">Highest T1 (24% risk)</div>
+        <div style="font-size:0.83em;margin-top:6px;line-height:1.8;">
+          POL 18.1% &bull; DEU 10.9% &bull; ISL 7.8%<br>
+          SVK 6.1% &bull; AZE 2.0% &bull; NOR 2.5%
+        </div>
+      </div>
+      <div class="pilot-card" style="border-color:#2980b9;">
+        <div style="font-weight:700;color:#2980b9;font-size:1.05em;">Discovery Toggle (Live A/B)</div>
+        <div style="font-size:0.83em;margin-top:6px;line-height:1.8;">
+          T5: 0% &bull; T4: 2% &bull; T3: 8%<br>
+          T2: 16% &bull; T1: 24% visibility cut<br>
+          50% A/B &bull; &euro;790K 3-mo downside
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -433,9 +533,10 @@ function exportCSV() {
 }
 
 function switchTab(id) {
-  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['overview','venues','tier-mix','how-to'][i]===id));
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['overview','venues','tier-mix','gov-matrix','how-to'][i]===id));
   document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
   document.getElementById('tab-'+id).classList.add('active');
+  if(id==='gov-matrix') { renderSummaryTable(); renderCrossTab(); }
 }
 
 // Init
@@ -445,6 +546,127 @@ renderTierMix();
 filteredVenues = [...VENUES];
 renderTable();
 document.getElementById('row-count').textContent = `${VENUES.length} venues`;
+
+
+const SUMMARY_DATA = {"ALB": {"5": {"gov": 3411926.0, "n": 98}, "4": {"gov": 2452484.0, "n": 101}, "3": {"gov": 4466380.0, "n": 382}, "2": {"gov": 681881.0, "n": 338}, "1": {"gov": 97854.0, "n": 90}}, "AZE": {"5": {"gov": 1982221.0, "n": 181}, "4": {"gov": 4969873.0, "n": 505}, "3": {"gov": 4520455.0, "n": 778}, "2": {"gov": 1354644.0, "n": 360}, "1": {"gov": 265098.0, "n": 238}}, "CYP": {"5": {"gov": 4276474.0, "n": 140}, "4": {"gov": 2682119.0, "n": 179}, "3": {"gov": 4606189.0, "n": 403}, "2": {"gov": 403078.0, "n": 240}, "1": {"gov": 167644.0, "n": 122}}, "DEU": {"5": {"gov": 30261851.0, "n": 1869}, "4": {"gov": 33965990.0, "n": 4619}, "3": {"gov": 33376743.0, "n": 5080}, "2": {"gov": 15190285.0, "n": 3529}, "1": {"gov": 13740575.0, "n": 3053}}, "DNK": {"5": {"gov": 20814517.0, "n": 563}, "4": {"gov": 19583914.0, "n": 782}, "3": {"gov": 17653210.0, "n": 775}, "2": {"gov": 3269812.0, "n": 288}, "1": {"gov": 1204308.0, "n": 118}}, "GEO": {"5": {"gov": 9438983.0, "n": 299}, "4": {"gov": 6324348.0, "n": 331}, "3": {"gov": 7651428.0, "n": 625}, "2": {"gov": 1103054.0, "n": 446}, "1": {"gov": 80159.0, "n": 185}}, "HUN": {"5": {"gov": 8971482.0, "n": 435}, "4": {"gov": 7295412.0, "n": 520}, "3": {"gov": 14047886.0, "n": 1000}, "2": {"gov": 1854697.0, "n": 431}, "1": {"gov": 974059.0, "n": 213}}, "ISL": {"5": {"gov": 1257893.0, "n": 43}, "4": {"gov": 1419607.0, "n": 73}, "3": {"gov": 2562606.0, "n": 143}, "2": {"gov": 833902.0, "n": 40}, "1": {"gov": 517023.0, "n": 12}}, "LTU": {"5": {"gov": 2209800.0, "n": 79}, "4": {"gov": 3485437.0, "n": 208}, "3": {"gov": 4222138.0, "n": 469}, "2": {"gov": 1972466.0, "n": 150}, "1": {"gov": 116869.0, "n": 41}}, "LUX": {"5": {"gov": 1764399.0, "n": 88}, "4": {"gov": 2722712.0, "n": 129}, "3": {"gov": 3442756.0, "n": 269}, "2": {"gov": 883186.0, "n": 140}, "1": {"gov": 350700.0, "n": 70}}, "LVA": {"5": {"gov": 2058213.0, "n": 68}, "4": {"gov": 2436122.0, "n": 159}, "3": {"gov": 4731270.0, "n": 435}, "2": {"gov": 1597250.0, "n": 129}, "1": {"gov": 96917.0, "n": 46}}, "MLT": {"5": {"gov": 5070635.0, "n": 165}, "4": {"gov": 5691265.0, "n": 222}, "3": {"gov": 9163691.0, "n": 573}, "2": {"gov": 625415.0, "n": 238}, "1": {"gov": 72237.0, "n": 109}}, "NOR": {"5": {"gov": 5278596.0, "n": 191}, "4": {"gov": 4749098.0, "n": 174}, "3": {"gov": 8619694.0, "n": 318}, "2": {"gov": 1842017.0, "n": 172}, "1": {"gov": 517534.0, "n": 52}}, "POL": {"5": {"gov": 1803293.0, "n": 260}, "4": {"gov": 2206013.0, "n": 567}, "3": {"gov": 3377990.0, "n": 749}, "2": {"gov": 1695721.0, "n": 438}, "1": {"gov": 2011951.0, "n": 439}}, "ROU": {"5": {"gov": 326753.0, "n": 13}, "4": {"gov": 295956.0, "n": 24}, "3": {"gov": 693801.0, "n": 76}, "2": {"gov": 142785.0, "n": 28}, "1": {"gov": 91940.0, "n": 21}}, "SVK": {"5": {"gov": 2080595.0, "n": 121}, "4": {"gov": 2506828.0, "n": 194}, "3": {"gov": 3546246.0, "n": 401}, "2": {"gov": 853230.0, "n": 178}, "1": {"gov": 587591.0, "n": 98}}, "XKX": {"5": {"gov": 788331.0, "n": 50}, "4": {"gov": 1165166.0, "n": 99}, "3": {"gov": 792370.0, "n": 172}, "2": {"gov": 193983.0, "n": 213}, "1": {"gov": 19248.0, "n": 69}}};
+const CROSSTAB_DATA = {"HUN": {"1": {"tier__3": {"gov": 2653.94128724, "cnt": 6}}, "3": {"tier__3": {"gov": 63251.850591300004, "cnt": 23}, "unknown": {"gov": 0.0, "cnt": 4}, "tier__1": {"gov": 52750.462985599996, "cnt": 5}, "tier__2": {"gov": 12107.7522646, "cnt": 3}}, "4": {"tier__2": {"gov": 81401.83065, "cnt": 3}, "tier__3": {"gov": 67074.3816266, "cnt": 11}, "tier__1": {"gov": 24985.50729, "cnt": 2}}, "2": {"tier__3": {"gov": 6525.50489061, "cnt": 11}, "tier__2": {"gov": 3828.7027639999997, "cnt": 2}}, "5": {"tier__3": {"gov": 32952.298701, "cnt": 4}, "tier__2": {"gov": 27750.4687, "cnt": 1}, "tier__1": {"gov": 113492.9394, "cnt": 1}}}, "POL": {"1": {"tier__3": {"gov": 27236.6, "cnt": 13}, "tier__2": {"gov": 90380.45629999999, "cnt": 10}, "ENT": {"gov": 247820.10000000003, "cnt": 38}, "tier__1": {"gov": 5548.7, "cnt": 1}}, "2": {"tier__2": {"gov": 78471.30000000002, "cnt": 8}, "tier__3": {"gov": 33578.564216000006, "cnt": 13}, "tier__1": {"gov": 105946.7, "cnt": 3}, "ENT": {"gov": 20564.717197999995, "cnt": 5}}, "3": {"tier__1": {"gov": 65189.972480000004, "cnt": 2}, "tier__3": {"gov": 952.6644492, "cnt": 1}, "tier__2": {"gov": 8261.055784, "cnt": 1}}, "5": {"tier__3": {"gov": 3890.732776, "cnt": 1}}, "4": {"tier__3": {"gov": 1405.722974, "cnt": 1}}}, "ROU": {"5": {"tier__1": {"gov": 211946.597697, "cnt": 6}, "tier__2": {"gov": 94859.59839, "cnt": 3}, "tier__3": {"gov": 16904.099497, "cnt": 2}}, "3": {"tier__1": {"gov": 146048.33099400002, "cnt": 6}, "ENT": {"gov": 203108.22451600002, "cnt": 8}, "tier__2": {"gov": 114981.01365000001, "cnt": 6}, "tier__3": {"gov": 181735.29661, "cnt": 25}}, "4": {"tier__1": {"gov": 181664.69984400005, "cnt": 10}, "tier__2": {"gov": 59077.65816, "cnt": 2}, "tier__3": {"gov": 41735.526937999995, "cnt": 4}}, "1": {"tier__2": {"gov": 57587.885055, "cnt": 3}, "tier__3": {"gov": 15786.288614000001, "cnt": 2}, "tier__1": {"gov": 6906.128238, "cnt": 1}}, "2": {"tier__2": {"gov": 70841.531626, "cnt": 4}, "tier__1": {"gov": 21475.20905, "cnt": 2}, "ENT": {"gov": 13254.92372, "cnt": 1}, "tier__3": {"gov": 17716.900735000003, "cnt": 3}}}, "SVK": {"1": {"tier__2": {"gov": 862.7494999999999, "cnt": 2}, "tier__3": {"gov": 24113.093299999997, "cnt": 57}, "tier__1": {"gov": 78.68, "cnt": 1}}, "2": {"tier__2": {"gov": 50627.828700000005, "cnt": 11}, "tier__1": {"gov": 42318.6169, "cnt": 5}}, "5": {"ENT": {"gov": 23456.0629, "cnt": 1}}, "3": {"tier__2": {"gov": 32879.8572, "cnt": 4}, "tier__1": {"gov": 43453.1161, "cnt": 4}}}, "DEU": {"2": {"Mid Market": {"gov": 8827.2169, "cnt": 5}, "tier__3": {"gov": 21440.507899999997, "cnt": 16}, "tier__2": {"gov": 55656.9792, "cnt": 2}, "ENT": {"gov": 20547.7, "cnt": 2}}, "5": {"tier__3": {"gov": 42519.57030000001, "cnt": 7}, "tier__2": {"gov": 54735.7891, "cnt": 2}, "tier__1": {"gov": 103232.0463, "cnt": 3}, "ENT": {"gov": 1668.4, "cnt": 1}, "Mid Market": {"gov": 3537.9, "cnt": 1}}, "4": {"tier__3": {"gov": 24430.435499999996, "cnt": 24}, "ENT": {"gov": 41646.5818, "cnt": 2}, "Mid Market": {"gov": 6334.6, "cnt": 2}, "tier__2": {"gov": 33507.9, "cnt": 3}}, "3": {"tier__3": {"gov": 36319.81790000001, "cnt": 26}, "Mid Market": {"gov": 7304.9845000000005, "cnt": 2}, "no__tier": {"gov": 0.0, "cnt": 2}, "ENT": {"gov": 6386.8392, "cnt": 3}, "tier__2": {"gov": 46921.6, "cnt": 2}}, "1": {"tier__3": {"gov": 5072.3062, "cnt": 8}, "tier__1": {"gov": 24904.754699999998, "cnt": 4}, "Mid Market": {"gov": 24826.2453, "cnt": 5}, "tier__2": {"gov": 50774.2, "cnt": 3}}}, "DNK": {"3": {"tier__3": {"gov": 151058.49021699998, "cnt": 20}, "tier__2": {"gov": 33055.8, "cnt": 1}, "ENT": {"gov": 414910.04059999995, "cnt": 3}, "tier__1": {"gov": 53490.787189999995, "cnt": 2}, "unknown": {"gov": 0.0, "cnt": 2}}, "5": {"tier__1": {"gov": 235023.3351, "cnt": 8}, "tier__2": {"gov": 232906.44009000002, "cnt": 5}, "tier__3": {"gov": 77162.981467, "cnt": 6}}, "4": {"tier__3": {"gov": 150020.51218259998, "cnt": 16}, "tier__1": {"gov": 156483.570293, "cnt": 5}, "tier__2": {"gov": 106298.40282, "cnt": 4}, "unknown": {"gov": 0.0, "cnt": 2}, "ENT": {"gov": 101930.6693, "cnt": 1}}, "2": {"tier__1": {"gov": 62628.016752999996, "cnt": 4}, "tier__2": {"gov": 2149.2, "cnt": 1}, "tier__3": {"gov": 18000.645109999998, "cnt": 3}, "Mid Market": {"gov": 1520.5829724999999, "cnt": 2}, "ENT": {"gov": 29676.91548, "cnt": 1}}, "1": {"ENT": {"gov": 877732.2717700001, "cnt": 7}, "tier__2": {"gov": 41910.29943, "cnt": 1}}}, "EST": {"4": {"tier__1": {"gov": 165941.2734, "cnt": 5}, "tier__3": {"gov": 95672.32719999999, "cnt": 19}, "tier__2": {"gov": 145353.4, "cnt": 4}, "unknown": {"gov": 0.0, "cnt": 1}}, "3": {"tier__3": {"gov": 93613.0976, "cnt": 20}, "unknown": {"gov": 0.0, "cnt": 5}, "tier__2": {"gov": 63382.100000000006, "cnt": 2}, "ENT": {"gov": 223413.6, "cnt": 3}, "tier__1": {"gov": 127382.4, "cnt": 8}}, "5": {"tier__1": {"gov": 286597.69999999995, "cnt": 10}, "tier__2": {"gov": 58039.5, "cnt": 2}, "tier__3": {"gov": 16858.7, "cnt": 4}, "Mid Market": {"gov": 75189.3, "cnt": 1}}, "2": {"tier__3": {"gov": 9653.2, "cnt": 7}, "tier__1": {"gov": 3109.9, "cnt": 1}}, "1": {"unknown": {"gov": 0.0, "cnt": 1}}}, "FIN": {"5": {"tier__3": {"gov": 203257.27319999997, "cnt": 19}, "tier__2": {"gov": 365359.01250000007, "cnt": 9}, "tier__1": {"gov": 93544.6, "cnt": 4}, "unknown": {"gov": 0.0, "cnt": 1}, "Mid Market": {"gov": 16478.1, "cnt": 1}}, "4": {"Mid Market": {"gov": 58433.8495, "cnt": 7}, "tier__3": {"gov": 77911.3553, "cnt": 12}, "tier__2": {"gov": 44069.3, "cnt": 3}, "tier__1": {"gov": 156619.6, "cnt": 5}, "ENT": {"gov": 28261.4, "cnt": 1}, "unknown": {"gov": 0.0, "cnt": 3}}, "3": {"Mid Market": {"gov": 211794.6916, "cnt": 12}, "tier__3": {"gov": 19744.3, "cnt": 5}, "tier__2": {"gov": 0.0, "cnt": 1}, "unknown": {"gov": 0.0, "cnt": 5}, "tier__1": {"gov": 13614.3, "cnt": 1}}, "2": {"tier__3": {"gov": 16386.3076, "cnt": 5}, "Mid Market": {"gov": 609.4, "cnt": 1}, "tier__1": {"gov": 25826.199999999997, "cnt": 2}}}, "ISL": {"2": {"ENT": {"gov": 391462.4895, "cnt": 2}, "tier__1": {"gov": 177020.74007, "cnt": 3}, "tier__2": {"gov": 77604.94545, "cnt": 2}}, "1": {"ENT": {"gov": 377657.3256, "cnt": 4}, "tier__1": {"gov": 114145.2393, "cnt": 1}}, "3": {"tier__1": {"gov": 965911.3451200001, "cnt": 19}, "tier__2": {"gov": 553003.1910600001, "cnt": 13}, "tier__3": {"gov": 108059.50620999999, "cnt": 4}, "ENT": {"gov": 23417.31501, "cnt": 1}}, "5": {"tier__1": {"gov": 483302.66750999994, "cnt": 7}, "tier__2": {"gov": 268212.96007000003, "cnt": 6}, "tier__3": {"gov": 163768.05144, "cnt": 6}}, "4": {"tier__1": {"gov": 425201.22425, "cnt": 6}, "tier__2": {"gov": 391299.05192, "cnt": 10}, "tier__3": {"gov": 83416.53338000001, "cnt": 3}, "ENT": {"gov": 24972.40186, "cnt": 1}}}, "LTU": {"2": {"ENT": {"gov": 951522.8982, "cnt": 9}, "Mid Market": {"gov": 294003.4, "cnt": 7}}, "3": {"tier__3": {"gov": 160029.5, "cnt": 28}, "Mid Market": {"gov": 35981.5, "cnt": 8}, "tier__2": {"gov": 93143.5, "cnt": 7}, "tier__1": {"gov": 44783.899999999994, "cnt": 6}, "ENT": {"gov": 60123.9, "cnt": 1}}, "5": {"tier__3": {"gov": 24589.1, "cnt": 2}, "tier__2": {"gov": 15096.5, "cnt": 1}, "tier__1": {"gov": 120165.9, "cnt": 3}, "ENT": {"gov": 55299.2, "cnt": 1}}, "4": {"tier__3": {"gov": 56886.899999999994, "cnt": 6}, "tier__2": {"gov": 119235.19999999998, "cnt": 6}, "tier__1": {"gov": 125595.79999999999, "cnt": 3}}}, "LUX": {"3": {"tier__3": {"gov": 74241.61949999999, "cnt": 27}, "tier__1": {"gov": 54442.13679999999, "cnt": 7}}, "4": {"ENT": {"gov": 433055.1618, "cnt": 4}, "tier__1": {"gov": 891553.3772999999, "cnt": 12}, "tier__2": {"gov": 247974.8577, "cnt": 6}}, "2": {"tier__3": {"gov": 7950.996300000001, "cnt": 8}, "ENT": {"gov": 277029.9472, "cnt": 2}, "tier__1": {"gov": 63731.0304, "cnt": 1}}, "1": {"tier__3": {"gov": 1854.0256, "cnt": 5}, "ENT": {"gov": 92636.2412, "cnt": 1}, "tier__2": {"gov": 161.8158, "cnt": 1}}, "5": {"tier__1": {"gov": 585772.6757000001, "cnt": 8}, "tier__2": {"gov": 139790.2458, "cnt": 3}, "ENT": {"gov": 125603.83310000002, "cnt": 3}}}, "LVA": {"3": {"tier__3": {"gov": 200572.087, "cnt": 27}, "ENT": {"gov": 55336.6443, "cnt": 1}, "tier__1": {"gov": 86520.27080000001, "cnt": 7}, "tier__2": {"gov": 247782.5506, "cnt": 9}, "unknown": {"gov": 0.0, "cnt": 2}}, "4": {"tier__1": {"gov": 149120.69030000002, "cnt": 3}, "ENT": {"gov": 42628.5336, "cnt": 2}, "tier__2": {"gov": 75423.0804, "cnt": 5}, "tier__3": {"gov": 29088.1612, "cnt": 5}}, "1": {"tier__3": {"gov": 4539.810299999999, "cnt": 5}, "tier__2": {"gov": 0.0, "cnt": 1}}, "2": {"ENT": {"gov": 728781.0163, "cnt": 5}, "tier__3": {"gov": 31210.695700000004, "cnt": 9}}, "5": {"tier__2": {"gov": 36659.496499999994, "cnt": 3}, "tier__3": {"gov": 8883.4934, "cnt": 2}, "tier__1": {"gov": 155327.91139999998, "cnt": 2}}}, "NOR": {"5": {"tier__1": {"gov": 1953029.3074900003, "cnt": 27}, "Mid Market": {"gov": 651354.6864999998, "cnt": 11}, "ENT": {"gov": 203077.99211, "cnt": 4}, "tier__2": {"gov": 1399860.2005999999, "cnt": 43}, "tier__3": {"gov": 64599.04881, "cnt": 3}}}, "SWE": {"1": {"ENT": {"gov": 686815.4999999999, "cnt": 10}, "tier__3": {"gov": 3611.2, "cnt": 3}, "tier__1": {"gov": 42200.200000000004, "cnt": 2}, "tier__2": {"gov": 556.5, "cnt": 1}}, "2": {"tier__3": {"gov": 16081.630415299998, "cnt": 13}, "ENT": {"gov": 1412408.3999999997, "cnt": 25}, "tier__1": {"gov": 62698.4, "cnt": 1}, "tier__2": {"gov": 2872.1, "cnt": 1}}, "3": {"tier__3": {"gov": 19693.790612, "cnt": 8}, "tier__1": {"gov": 103634.4, "cnt": 2}}, "5": {"tier__1": {"gov": 292455.535707, "cnt": 7}, "tier__2": {"gov": 40531.2, "cnt": 3}, "tier__3": {"gov": 12663.8, "cnt": 3}}, "4": {"tier__3": {"gov": 32677.6868309, "cnt": 9}, "tier__1": {"gov": 132777.19999999998, "cnt": 5}, "tier__2": {"gov": 31100.5, "cnt": 1}, "ENT": {"gov": 34428.5, "cnt": 1}}}, "ALB": {"2": {"tier__3": {"gov": 38648.835682499994, "cnt": 61}, "tier__1": {"gov": 80155.59104, "cnt": 1}, "tier__2": {"gov": 40560.076759999996, "cnt": 3}}, "1": {"tier__3": {"gov": 10705.294516836, "cnt": 26}}, "3": {"tier__3": {"gov": 195510.46824139997, "cnt": 50}, "tier__2": {"gov": 36500.044402, "cnt": 4}, "ENT": {"gov": 236298.1102, "cnt": 2}, "tier__1": {"gov": 381923.09205999994, "cnt": 5}}, "4": {"tier__1": {"gov": 162415.06374, "cnt": 2}, "tier__3": {"gov": 83987.14182000002, "cnt": 11}, "tier__2": {"gov": 34007.769874, "cnt": 4}, "ENT": {"gov": 39479.13252, "cnt": 1}}, "5": {"tier__3": {"gov": 2009.300599, "cnt": 1}}}, "AZE": {"3": {"tier__3": {"gov": 57722.063366999995, "cnt": 29}, "tier__1": {"gov": 67916.45541000001, "cnt": 4}, "ENT": {"gov": 43578.5, "cnt": 3}, "unknown": {"gov": 0.0, "cnt": 1}, "tier__2": {"gov": 694.1, "cnt": 1}}, "1": {"tier__3": {"gov": 7322.6775608, "cnt": 10}, "tier__2": {"gov": 704.9, "cnt": 1}}, "4": {"ENT": {"gov": 660582.34613, "cnt": 6}, "tier__3": {"gov": 43002.04700599999, "cnt": 18}, "tier__1": {"gov": 11904.222212, "cnt": 2}, "tier__2": {"gov": 13839.3, "cnt": 3}}, "2": {"tier__3": {"gov": 10588.199999999999, "cnt": 10}, "tier__2": {"gov": 1237.4, "cnt": 1}}, "5": {"tier__3": {"gov": 17464.800000000003, "cnt": 3}, "tier__2": {"gov": 25841.800000000003, "cnt": 2}, "tier__1": {"gov": 28436.3, "cnt": 1}}}, "CYP": {"3": {"tier__3": {"gov": 16683.899999999998, "cnt": 29}, "Mid Market": {"gov": 283.5, "cnt": 1}, "tier__2": {"gov": 3828.0, "cnt": 3}}, "4": {"tier__3": {"gov": 4210.8, "cnt": 8}, "tier__2": {"gov": 5167.900000000001, "cnt": 6}, "Mid Market": {"gov": 170.8, "cnt": 1}, "tier__1": {"gov": 567.5, "cnt": 1}}, "2": {"tier__3": {"gov": 6279.000000000001, "cnt": 13}, "tier__1": {"gov": 579.4, "cnt": 1}, "Mid Market": {"gov": 369.3, "cnt": 1}, "tier__2": {"gov": 1276.2, "cnt": 1}}, "1": {"tier__3": {"gov": 4463.6, "cnt": 18}, "Mid Market": {"gov": 1063.5, "cnt": 3}, "tier__2": {"gov": 154.0, "cnt": 1}}}, "GEO": {"3": {"tier__3": {"gov": 79192.9, "cnt": 26}, "tier__2": {"gov": 49291.5, "cnt": 5}, "unknown": {"gov": 0.0, "cnt": 1}, "ENT": {"gov": 50693.8, "cnt": 3}, "tier__1": {"gov": 126685.9, "cnt": 4}}, "5": {"tier__2": {"gov": 308298.2, "cnt": 4}, "tier__3": {"gov": 14118.099999999999, "cnt": 3}}, "1": {"ENT": {"gov": 1668.7, "cnt": 1}, "tier__1": {"gov": 785.6, "cnt": 1}}, "2": {"tier__1": {"gov": 452752.2, "cnt": 7}, "ENT": {"gov": 2705.8, "cnt": 2}, "tier__2": {"gov": 113279.69999999998, "cnt": 4}, "tier__3": {"gov": 158765.80000000002, "cnt": 13}}, "4": {"tier__3": {"gov": 56515.200000000004, "cnt": 10}, "tier__2": {"gov": 102981.9, "cnt": 4}}}, "MLT": {"5": {"tier__2": {"gov": 530588.6494, "cnt": 16}, "tier__3": {"gov": 69185.7501, "cnt": 4}, "tier__1": {"gov": 386795.042, "cnt": 6}, "unknown": {"gov": 0.0, "cnt": 1}}, "2": {"tier__3": {"gov": 61315.824400000005, "cnt": 16}}, "3": {"tier__3": {"gov": 128016.60949999999, "cnt": 24}, "tier__2": {"gov": 9372.1495, "cnt": 3}, "ENT": {"gov": 12860.5837, "cnt": 1}}, "4": {"tier__3": {"gov": 40708.19789999999, "cnt": 6}, "ENT": {"gov": 36228.0535, "cnt": 2}, "tier__1": {"gov": 33134.7039, "cnt": 1}}, "1": {"tier__3": {"gov": 754.7453, "cnt": 5}}}, "XKX": {"4": {"tier__2": {"gov": 78328.78000000001, "cnt": 5}, "tier__1": {"gov": 193906.23, "cnt": 5}, "tier__3": {"gov": 17308.71, "cnt": 5}}, "3": {"tier__3": {"gov": 51741.74, "cnt": 20}, "tier__2": {"gov": 35396.21, "cnt": 9}, "ENT": {"gov": 47481.270000000004, "cnt": 3}, "tier__1": {"gov": 5216.26, "cnt": 2}}, "2": {"tier__3": {"gov": 17246.239999999998, "cnt": 24}, "tier__1": {"gov": 918.13, "cnt": 1}}, "1": {"tier__3": {"gov": 2362.31, "cnt": 7}}, "5": {"tier__3": {"gov": 9894.39, "cnt": 1}, "tier__1": {"gov": 8133.08, "cnt": 1}, "tier__2": {"gov": 19131.79, "cnt": 2}}}};
+
+const BOW_LABELS = {5:'Best (BoW)',4:'Great',3:'Standard',2:'Improve',1:'Limited'};
+const BOW_COLORS = {5:'#B8860B',4:'#27ae60',3:'#2980b9',2:'#e67e22',1:'#c0392b'};
+const MX_ORDER = ['ENT','Mid Market','tier__1','tier__2','tier__3','no__tier','unknown'];
+const MX_LABELS = {'ENT':'ENT','Mid Market':'Mid Mkt','tier__1':'Tier 1','tier__2':'Tier 2','tier__3':'Tier 3','no__tier':'No Tier','unknown':'Unknown'};
+
+function govFmt(v) {
+  if(!v||v===0) return '<span style="color:#ddd">—</span>';
+  if(v<1000) return '&euro;'+Math.round(v);
+  if(v<1000000) return '&euro;'+(v/1000).toFixed(0)+'K';
+  return '&euro;'+(v/1000000).toFixed(2)+'M';
+}
+
+function renderSummaryTable() {
+  const tbody = document.getElementById('summary-tbody');
+  if(!tbody) return;
+  const countries = Object.keys(SUMMARY_DATA).sort();
+  let rows = '';
+  countries.forEach(function(c) {
+    const cd = SUMMARY_DATA[c];
+    let total = 0;
+    for(let t=1;t<=5;t++) total += (cd[t]||{gov:0}).gov||0;
+    function g(t) { return (cd[t]||{gov:0}).gov||0; }
+    function pct(t) { return total ? (g(t)/total*100).toFixed(1)+'%' : '0%'; }
+    const top2pct = total ? ((g(5)+g(4))/total*100) : 0;
+    const barW = top2pct.toFixed(0);
+    rows += '<tr>';
+    rows += '<td><strong>'+c+'</strong></td>';
+    rows += '<td>'+govFmt(total)+'</td>';
+    rows += '<td><span style="color:#B8860B;font-weight:600;">'+govFmt(g(5))+'</span><br><small style="color:#7f8c8d;">'+pct(5)+'</small></td>';
+    rows += '<td><span style="color:#27ae60;font-weight:600;">'+govFmt(g(4))+'</span><br><small style="color:#7f8c8d;">'+pct(4)+'</small></td>';
+    rows += '<td>'+govFmt(g(3))+'<br><small style="color:#7f8c8d;">'+pct(3)+'</small></td>';
+    rows += '<td><span style="color:#e67e22;">'+govFmt(g(2))+'</span><br><small style="color:#7f8c8d;">'+pct(2)+'</small></td>';
+    rows += '<td><span style="color:#c0392b;">'+govFmt(g(1))+'</span><br><small style="color:#7f8c8d;">'+pct(1)+'</small></td>';
+    rows += '<td><div style="height:6px;border-radius:3px;background:#eee;width:120px;display:inline-block;vertical-align:middle;"><div style="height:6px;border-radius:3px;background:#B8860B;width:'+barW+'px;max-width:120px;"></div></div><br><small style="color:#B8860B;font-weight:600;">'+top2pct.toFixed(1)+'%</small></td>';
+    rows += '</tr>';
+  });
+  tbody.innerHTML = rows;
+}
+
+function renderCrossTab() {
+  var c = document.getElementById('matrix-country-sel');
+  if(!c) return;
+  var country = c.value;
+  var ctdata = CROSSTAB_DATA[country];
+  if(!ctdata) {
+    document.getElementById('crosstab-container').innerHTML = '<p style="color:#7f8c8d;">No venue-level data available for '+country+'.</p>';
+    return;
+  }
+  var mxPresent = {};
+  [1,2,3,4,5].forEach(function(bow) {
+    var bd = ctdata[bow]||ctdata[String(bow)]||{};
+    Object.keys(bd).forEach(function(mx){ mxPresent[mx]=1; });
+  });
+  var mxCols = MX_ORDER.filter(function(m){ return mxPresent[m]; });
+  var totalGov = 0;
+  var totalVenues = 0;
+  [1,2,3,4,5].forEach(function(bow) {
+    var bd = ctdata[bow]||ctdata[String(bow)]||{};
+    Object.values(bd).forEach(function(v){ totalGov+=(v.gov||0); totalVenues+=(v.cnt||0); });
+  });
+  var html = '<p style="font-size:0.8em;color:#7f8c8d;margin:0 0 8px;">'+country+': '+totalVenues+' venues, '+govFmt(totalGov)+' GoV (L2M) &mdash; <em>subset: venues with assigned AMs</em></p>';
+  html += '<div style="overflow-x:auto;"><table style="font-size:0.82em;"><thead><tr><th>BoW Tier</th>';
+  mxCols.forEach(function(mx){ html += '<th>'+( MX_LABELS[mx]||mx )+'</th>'; });
+  html += '<th>Row Total</th><th>% of Country</th></tr></thead><tbody>';
+  [5,4,3,2,1].forEach(function(bow) {
+    var bd = ctdata[bow]||ctdata[String(bow)]||{};
+    var rowGov = 0;
+    var cells = mxCols.map(function(mx) {
+      var v = bd[mx]||{};
+      var g = v.gov||0;
+      rowGov += g;
+      var p = totalGov ? (g/totalGov*100).toFixed(1) : '0.0';
+      var cnt = v.cnt||0;
+      var alpha = totalGov ? Math.min(0.5,g/totalGov*5) : 0;
+      var col = bow===5?'184,134,11':bow===4?'39,174,96':bow===3?'41,128,185':bow===2?'230,126,34':'192,57,43';
+      var bg = g>0 ? 'background:rgba('+col+','+alpha.toFixed(2)+')' : '';
+      return '<td style="text-align:right;'+bg+'">'+( g>0 ? govFmt(g)+'<br><small style="color:#7f8c8d;">'+p+'% / '+cnt+'v</small>' : '<span style="color:#ddd">—</span>' )+'</td>';
+    });
+    var rowPct = totalGov ? (rowGov/totalGov*100).toFixed(1) : '0.0';
+    html += '<tr><td style="white-space:nowrap;"><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+BOW_COLORS[bow]+';margin-right:5px;vertical-align:middle;"></span><strong>T'+bow+' '+BOW_LABELS[bow]+'</strong></td>';
+    html += cells.join('');
+    html += '<td style="text-align:right;font-weight:600;">'+govFmt(rowGov)+'</td><td style="text-align:right;color:'+BOW_COLORS[bow]+';font-weight:600;">'+rowPct+'%</td></tr>';
+  });
+  html += '<tr style="border-top:2px solid #ddd;"><td><strong>Column Total</strong></td>';
+  mxCols.forEach(function(mx) {
+    var colGov = 0;
+    [1,2,3,4,5].forEach(function(bow){ var bd=ctdata[bow]||ctdata[String(bow)]||{}; colGov+=(bd[mx]||{}).gov||0; });
+    var cp = totalGov ? (colGov/totalGov*100).toFixed(0) : '0';
+    html += '<td style="text-align:right;"><strong>'+govFmt(colGov)+'</strong><br><small style="color:#7f8c8d;">'+cp+'%</small></td>';
+  });
+  html += '<td style="text-align:right;"><strong>'+govFmt(totalGov)+'</strong></td><td></td></tr>';
+  html += '</tbody></table></div>';
+  document.getElementById('crosstab-container').innerHTML = html;
+
+  var insights = {
+    ALB: 'ALB: All 276K ENT GoV is in T3 (Standard) &mdash; no ENT venue has achieved the Best of Wolt badge. Tier 1 Mx (SMB key accounts) dominates at 624K (46% of subset). Only 2K GoV in T5 (from Tier 3 Mx venues).',
+    AZE: 'AZE: 71% of ENT GoV (661K/704K) sits in BoW T4 (Great). ENT performing well but not reaching T5 Best badge. T1/T2/T3 Mx tiers split relatively evenly across T4/T5.',
+    CYP: 'CYP: Small venue-level sample (87 venues, &euro;45K). Full market has &euro;12.1M total L2M GoV. T3 Mx tier dominates. Most venues in T3 Standard or below.',
+    DEU: 'DEU: T1 Mx leads T5 (103K). ENT spread across BoW tiers &mdash; present in T5/T4 and T2/T3. Full market T5 = &euro;30.3M (24%). Strong 50.7% T4+T5 combined.',
+    DNK: '&#x26A0;&#xFE0F; DNK WARNING: 878K ENT GoV (32% of all sampled GoV) is in T1 (Limited) &mdash; these venues face 24% discovery reduction in the live A/B test. Also 415K ENT in T3 Standard. Urgent AM action required.',
+    GEO: 'GEO: Strong BoW performance &mdash; T5+T4 = 64% of full market GoV (&euro;15.8M / &euro;24.6M). No venue-level Mx cross-tab in this dataset.',
+    HUN: 'HUN: T3 Mx dominates across all BoW tiers. Balanced BoW distribution &mdash; T3 Standard holds most GoV (42%). T5+T4 = 49% combined.',
+    ISL: 'ISL: Relatively high T1 Limited share (7.8% of &euro;6.6M market). Small market but notable concentration of GoV at risk from discovery cut.',
+    LTU: 'LTU: T3 Standard is largest bucket (35.2%). T4+T5 combined = 47.4%. T2 Improve is unusually high at 16.4% &mdash; many venues close to Standard threshold.',
+    LUX: 'LUX: T3 Standard dominant (37.6%). T4+T5 = 49%. Small market (&euro;9.2M L2M).',
+    LVA: 'LVA: T3 Standard = 43.3% of GoV, T4+T5 = 41.1%. Almost no T1 risk (0.9%).',
+    MLT: 'MLT: T3 Standard = 44.4% of GoV. T4+T5 = 52.2%. Very low T1 risk (0.4%).',
+    NOR: 'NOR: T3 Standard = 41% of GoV. T4+T5 = 47.7%. Low T1 risk (2.5%).',
+    POL: '&#x26A0;&#xFE0F; POL WARNING: 54% of ENT GoV (248K/268K) in T1 (Limited) &mdash; Poland ENT at high risk from 24% discovery reduction. Only 1% of GoV in T5. T2+T1 = 33% of full market.',
+    SVK: 'SVK: T3 Standard = 37% of GoV. T4+T5 = 47.9%. Moderate T1 risk (6.1%).',
+    XKX: 'XKX: Strong T4+T5 = 66% of GoV. Very low T1 Limited exposure (0.7%). Small market (&euro;3.0M L2M).'
+  };
+  var insightEl = document.getElementById('crosstab-insight');
+  if(insightEl) insightEl.innerHTML = insights[country] || country+': Cross-tab shows BoW tier × Mx tier GoV distribution. T5 = Best of Wolt badge. T1 = Limited (24% discovery penalty).';
+}
+
 </script>
 </body>
 </html>
