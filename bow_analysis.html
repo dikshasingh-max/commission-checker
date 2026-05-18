@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BoW Venues Analysis</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 0; padding: 16px; background: #f5f6fa; color: #2c3e50; }
+  h1 { font-size: 1.4em; margin: 0 0 4px; }
+  h2 { font-size: 1.1em; margin: 16px 0 8px; color: #34495e; border-bottom: 2px solid #e0e0e0; padding-bottom: 4px; }
+  .subtitle { color: #7f8c8d; font-size: 0.85em; margin: 0 0 16px; }
+  .notice { background: #fff3cd; border: 1px solid #ffc107; border-radius: 6px; padding: 10px 14px; margin-bottom: 16px; font-size: 0.85em; }
+  .notice a { color: #0066cc; }
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 16px; }
+  .stat-card { background: #fff; border-radius: 8px; padding: 12px; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  .stat-num { font-size: 2em; font-weight: 700; line-height: 1; }
+  .stat-lbl { font-size: 0.75em; color: #7f8c8d; margin-top: 2px; }
+  .tier-best  { color: #B8860B; }
+  .tier-great { color: #27ae60; }
+  .tier-std   { color: #2980b9; }
+  .tier-imp   { color: #e67e22; }
+  .tier-lim   { color: #c0392b; }
+
+  .controls { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; align-items: center; }
+  .controls select, .controls input { padding: 5px 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 0.85em; }
+  .controls label { font-size: 0.85em; font-weight: 500; }
+
+  table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.08); font-size: 0.82em; }
+  th { background: #2c3e50; color: #fff; padding: 8px 10px; text-align: left; font-weight: 600; white-space: nowrap; cursor: pointer; user-select: none; }
+  th:hover { background: #34495e; }
+  td { padding: 6px 10px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
+  tr:hover td { background: #f8f9fa; }
+  .venue-id { font-family: monospace; font-size: 0.78em; color: #7f8c8d; }
+  .tier-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.78em; font-weight: 600; white-space: nowrap; }
+  .badge-1 { background: #FFF9E6; color: #B8860B; border: 1px solid #FFD700; }
+  .badge-2 { background: #E8F8F0; color: #27ae60; border: 1px solid #2ECC71; }
+  .badge-3 { background: #EBF5FB; color: #2980b9; border: 1px solid #3498DB; }
+  .badge-4 { background: #FDF2E9; color: #e67e22; border: 1px solid #E67E22; }
+  .badge-5 { background: #FDEDEC; color: #c0392b; border: 1px solid #E74C3C; }
+  .badge-x { background: #f0f0f0; color: #7f8c8d; border: 1px solid #ccc; }
+
+  .bow-yes { color: #27ae60; font-weight: 700; }
+  .bow-no  { color: #bdc3c7; }
+
+  .input-cell input { width: 90px; padding: 3px 5px; border: 1px solid #ddd; border-radius: 3px; font-size: 0.8em; text-align: right; }
+  .input-cell input:focus { border-color: #3498db; outline: none; }
+  .pos-change { color: #27ae60; font-weight: 600; }
+  .neg-change { color: #c0392b; font-weight: 600; }
+
+  .section-box { background: #fff; border-radius: 8px; padding: 14px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  .tier-dist-bar { display: flex; height: 28px; border-radius: 4px; overflow: hidden; margin: 8px 0; }
+  .tier-dist-seg { display: flex; align-items: center; justify-content: center; color: #fff; font-size: 0.75em; font-weight: 700; transition: flex 0.3s; }
+
+  .export-btn { padding: 6px 14px; background: #2c3e50; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 0.82em; }
+  .export-btn:hover { background: #34495e; }
+
+  .insight-box { background: #e8f4fd; border-left: 4px solid #3498db; padding: 10px 14px; border-radius: 0 6px 6px 0; margin: 8px 0; font-size: 0.85em; }
+  .pilot-results { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px; }
+  .pilot-card { background: #f8f9fa; border-radius: 6px; padding: 10px; border-left: 3px solid #3498db; }
+  .pilot-card .val { font-size: 1.4em; font-weight: 700; color: #2c3e50; }
+  .pilot-card .desc { font-size: 0.75em; color: #7f8c8d; }
+
+  .tabs { display: flex; gap: 2px; margin-bottom: 12px; }
+  .tab { padding: 7px 16px; background: #dfe6e9; border-radius: 6px 6px 0 0; cursor: pointer; font-size: 0.85em; border: 1px solid #ccc; border-bottom: none; }
+  .tab.active { background: #fff; font-weight: 600; color: #2c3e50; }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+  #row-count { font-size: 0.8em; color: #7f8c8d; }
+</style>
+</head>
+<body>
+
+<h1>🏅 Best of Wolt — Venue Analysis</h1>
+<p class="subtitle">
+  Source: Looker Dashboard <a href="https://looker.wolt.com/dashboards/107073" target="_blank">#107073</a> (requires auth) &amp; 
+  ENT/MM Email Template (May 2026) &nbsp;·&nbsp; 
+  Multi-tier launch: <strong>May 4, 2026</strong>
+</p>
+
+<div class="notice">
+  ⚠️ <strong>Data completeness note:</strong> This tool contains BoW tier data for 
+  <strong>ENT/MM venues in ALB, CYP, and AZE</strong> extracted from the 
+  <a href="https://docs.google.com/spreadsheets/d/1NVuNxLby7vZWY0CT7gQZqHOZWu7_DMjvzCrnIXkzTAM" target="_blank">BoW monthly email template</a>. 
+  To complete the analysis (GoV, Wolt commission tier, commission rate, pre/post volume), 
+  export from <a href="https://looker.wolt.com/dashboards/107073?tab_name=Venue+Overview" target="_blank">Looker → Venue Overview tab</a> 
+  and paste into the GoV columns below. AZE venues show old binary BoW=Yes (no multi-tier data yet).
+  DEU, DNK, POL and other markets need separate export.
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('overview')">Overview</div>
+  <div class="tab" onclick="switchTab('venues')">Venue Table</div>
+  <div class="tab" onclick="switchTab('tier-mix')">Tier Mix Analysis</div>
+  <div class="tab" onclick="switchTab('how-to')">How to Complete</div>
+</div>
+
+<div id="tab-overview" class="tab-content active">
+  <div class="stats-grid" id="stats-grid"></div>
+
+  <div class="section-box">
+    <h2>BoW Tier Distribution (ALB + CYP — multi-tier)</h2>
+    <div class="tier-dist-bar" id="tier-bar"></div>
+    <div id="tier-legend" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;font-size:0.8em;"></div>
+  </div>
+
+  <div class="section-box">
+    <h2>Pilot Results (from internal reports)</h2>
+    <p style="font-size:0.82em;color:#7f8c8d;margin:0 0 8px;">Q4 2025 pilot (DEU, DNK, POL, AZE) — Nov 2025 to Jan 2026</p>
+    <div class="pilot-results">
+      <div class="pilot-card"><div class="val">+3.5%</div><div class="desc">Incremental purchases for BoW venues vs non-BoW</div></div>
+      <div class="pilot-card"><div class="val">+10–20%</div><div class="desc">More venue visits for BoW venues post-launch</div></div>
+      <div class="pilot-card"><div class="val">+5–10%</div><div class="desc">More orders for BoW venues vs pre-launch period</div></div>
+      <div class="pilot-card"><div class="val">+28%</div><div class="desc">GOV uplift (GRC, ALB, XKX pilots — Mx Penalties)</div></div>
+      <div class="pilot-card"><div class="val">−39%</div><div class="desc">Cancellation rate reduction (GRC, ALB, XKX)</div></div>
+      <div class="pilot-card"><div class="val">44K</div><div class="desc">Total BoW venues globally as of May 2026</div></div>
+    </div>
+    <div class="insight-box" style="margin-top:10px;">
+      <strong>Commission / Tier Mix Impact (from WBR May 2026):</strong><br>
+      Tier 3 share running +3.3pp above plan (22.1% vs 18.8%), creating a <strong>+14.7 bps mix tailwind</strong> 
+      as Tier 3 has the highest commission rate (avg 27.74%). However, this is <em>partly driven by tiering logic 
+      changes planned for H2, not solely by BoW</em>. Tier 2 (largest bucket at 33.7%) is −2.7pp below plan, creating a −6.3 bps headwind.
+    </div>
+  </div>
+</div>
+
+<div id="tab-venues" class="tab-content">
+  <div class="controls">
+    <label>Country:
+      <select id="filter-country" onchange="applyFilters()">
+        <option value="">All</option>
+        <option value="ALB">ALB</option>
+        <option value="AZE">AZE</option>
+        <option value="CYP">CYP</option>
+      </select>
+    </label>
+    <label>BoW Tier:
+      <select id="filter-tier" onchange="applyFilters()">
+        <option value="">All</option>
+        <option value="1">1 – Best (BoW)</option>
+        <option value="2">2 – Great</option>
+        <option value="3">3 – Standard</option>
+        <option value="4">4 – Improve</option>
+        <option value="5">5 – Limited</option>
+      </select>
+    </label>
+    <label>Search:
+      <input type="text" id="search" placeholder="Venue name…" oninput="applyFilters()">
+    </label>
+    <label style="margin-left:auto; display:flex; align-items:center; gap:4px;">
+      <input type="checkbox" id="bow-only" onchange="applyFilters()"> BoW only
+    </label>
+    <button class="export-btn" onclick="exportCSV()">⬇ Export CSV</button>
+    <span id="row-count"></span>
+  </div>
+
+  <table id="venue-table">
+    <thead>
+      <tr>
+        <th onclick="sortTable(0)">Country</th>
+        <th onclick="sortTable(1)">Venue Name</th>
+        <th onclick="sortTable(2)">Venue ID</th>
+        <th onclick="sortTable(3)">City</th>
+        <th onclick="sortTable(4)">BoW Tier</th>
+        <th onclick="sortTable(5)">Account Manager</th>
+        <th>Wolt Tier<br><small style="font-weight:400;opacity:0.7;">(from Looker)</small></th>
+        <th>Commission %<br><small style="font-weight:400;opacity:0.7;">(from Looker)</small></th>
+        <th>Pre-BoW GoV (€)<br><small style="font-weight:400;opacity:0.7;">(paste from Looker)</small></th>
+        <th>Post-BoW GoV (€)<br><small style="font-weight:400;opacity:0.7;">(paste from Looker)</small></th>
+        <th>Volume Δ %</th>
+        <th>BoW Go-Live</th>
+      </tr>
+    </thead>
+    <tbody id="venue-tbody"></tbody>
+  </table>
+</div>
+
+<div id="tab-tier-mix" class="tab-content">
+  <div class="section-box">
+    <h2>Tier Mix Summary (ALB + CYP — 189 ENT/MM venues)</h2>
+    <table id="tier-mix-table" style="max-width:600px;">
+      <thead>
+        <tr>
+          <th>BoW Tier</th>
+          <th>Tier Name</th>
+          <th># Venues</th>
+          <th>% of Total</th>
+          <th>Visibility Toggle</th>
+          <th>Avg City CR%<br>(city benchmark)</th>
+        </tr>
+      </thead>
+      <tbody id="tier-mix-tbody"></tbody>
+    </table>
+    <div class="insight-box" style="margin-top:12px;">
+      <strong>How tier distribution affects commissions:</strong><br>
+      BoW tiers primarily affect <em>consumer visibility</em> (toggle %), not commission rates directly. 
+      Commission rates are determined by Wolt's internal tier (Tier 1/2/3/ENT/MM). 
+      However, BoW indirectly affects commission mix if: (1) BoW GoV uplift grows the share of lower-commission 
+      ENT venues, or (2) multi-tier logic pushes more SMB venues into Tier 3 (highest commission rate).
+      <br><br>
+      <strong>To calculate commission uplift from tier mix shift:</strong><br>
+      Pull <em>pre-BoW vs post-BoW</em> shares of Tier 1/2/3/ENT/MM by venue from Looker 
+      <a href="https://looker.wolt.com/explore/merchant_data/venue_country_reporting" target="_blank">venue_country_reporting explore</a>, 
+      then multiply share changes by their respective commission rates.
+    </div>
+  </div>
+
+  <div class="section-box">
+    <h2>BoW Tier Impact on Visibility (toggle %)</h2>
+    <table style="max-width:500px;">
+      <thead><tr><th>BoW Tier</th><th>Tier Name</th><th>Discovery Toggle %</th><th>Effect</th></tr></thead>
+      <tbody>
+        <tr><td><span class="tier-badge badge-1">1</span></td><td>Best (BoW)</td><td>0%</td><td>Full visibility (no penalty)</td></tr>
+        <tr><td><span class="tier-badge badge-2">2</span></td><td>Great</td><td>5%</td><td>Slight reduction</td></tr>
+        <tr><td><span class="tier-badge badge-3">3</span></td><td>Standard</td><td>20%</td><td>Moderate reduction</td></tr>
+        <tr><td><span class="tier-badge badge-4">4</span></td><td>Improve</td><td>40%</td><td>Significant reduction</td></tr>
+        <tr><td><span class="tier-badge badge-5">5</span></td><td>Limited</td><td>60%</td><td>Heavy reduction</td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:0.8em;color:#7f8c8d;">Note: Toggle launched as 50/50 A/B test at reduced percentages due to −0.6% GOV/user impact observed in April testing.</p>
+  </div>
+</div>
+
+<div id="tab-how-to" class="tab-content">
+  <div class="section-box">
+    <h2>How to Complete This Analysis</h2>
+    <p style="font-size:0.85em;">To fill in the missing columns (GoV, Wolt Tier, Commission Rate), follow these steps:</p>
+    
+    <h2 style="color:#2980b9;">Step 1 — Get venue-level BoW data from Looker</h2>
+    <ol style="font-size:0.85em; line-height:1.7;">
+      <li>Open <a href="https://looker.wolt.com/dashboards/107073?tab_name=Venue+Overview" target="_blank">Dashboard 107073 → Venue Overview tab</a></li>
+      <li>Filter by your target country/market</li>
+      <li>Click the tile's <strong>⋮ menu → Download → All Results as CSV</strong></li>
+      <li>The CSV will include: Venue ID, Venue Name, City, BoW Tier, each metric score</li>
+    </ol>
+
+    <h2 style="color:#2980b9;">Step 2 — Get commission rates from venue_country_reporting</h2>
+    <ol style="font-size:0.85em; line-height:1.7;">
+      <li>Open <a href="https://looker.wolt.com/explore/merchant_data/venue_country_reporting" target="_blank">Looker → venue_country_reporting explore</a></li>
+      <li>Select dimensions: Venue ID, Venue Name, Wolt Tier, Commission Rate (avg)</li>
+      <li>Filter: date = last 2 months; country = your target</li>
+      <li>Download as CSV</li>
+    </ol>
+
+    <h2 style="color:#2980b9;">Step 3 — Get Pre/Post GoV from purchases explore</h2>
+    <ol style="font-size:0.85em; line-height:1.7;">
+      <li>Open <a href="https://looker.wolt.com/explore/core/f_purchases" target="_blank">Looker → f_purchases explore</a></li>
+      <li><strong>Pre-BoW period:</strong> Filter order_date = Feb 4 – May 3, 2026 (90d before launch)</li>
+      <li><strong>Post-BoW period:</strong> Filter order_date = May 4 – May 17, 2026 (post-launch MTD)</li>
+      <li>Group by: Venue ID, sum GoV subtotal</li>
+      <li>Join the two exports by Venue ID → compute % change</li>
+    </ol>
+
+    <h2 style="color:#2980b9;">Step 4 — Tier Mix Shift Calculation</h2>
+    <div class="insight-box">
+      <strong>Formula:</strong><br>
+      Commission uplift from tier mix = Σ (Post_share_tier_i − Pre_share_tier_i) × Rate_tier_i<br><br>
+      Where Rate_tier_i is the commission rate for that Wolt internal tier.<br>
+      The share change attributable to BoW = share change in months immediately after BoW launch vs a control group (non-BoW cities).
+    </div>
+
+    <h2 style="color:#2980b9;">Key reference data</h2>
+    <table style="font-size:0.83em; max-width:500px;">
+      <thead><tr><th>Wolt Internal Tier</th><th>Approx Rate (May 2026)</th><th>Share of GOV</th></tr></thead>
+      <tbody>
+        <tr><td>Tier 3 (SMB highest)</td><td>~27.74%</td><td>22.1% (above plan)</td></tr>
+        <tr><td>Tier 2 (SMB mid)</td><td>lower</td><td>33.7% (below plan)</td></tr>
+        <tr><td>Tier 1 (SMB lowest)</td><td>lower</td><td>~17%</td></tr>
+        <tr><td>Mid Market</td><td>~20.88%</td><td>~4.7%</td></tr>
+        <tr><td>ENT</td><td>lowest (~17%)</td><td>~17.1%</td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:0.78em;color:#7f8c8d;">Source: Wolt Mx Team Weekly Business Review, May 2026</p>
+  </div>
+</div>
+
+<script>
+const VENUES = [{"country": "ALB", "name": "Burger King Piazza", "venue_id": "665622ca62653d361e0f23da", "city": "Tirana", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Kulmita Hoxha", "source": "multi-tier"}, {"country": "ALB", "name": "Burger King QTU", "venue_id": "66f150c141d7232f6e9b4df4", "city": "Tirana", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Kulmita Hoxha", "source": "multi-tier"}, {"country": "ALB", "name": "Burger King TEG", "venue_id": "665622ca62653d361e0f23dc", "city": "Tirana", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Kulmita Hoxha", "source": "multi-tier"}, {"country": "ALB", "name": "Jumbo", "venue_id": "688733c6606c8b1154bd82f2", "city": "Tirana", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Migela Cani", "source": "multi-tier"}, {"country": "ALB", "name": "Petville Astir", "venue_id": "67d7efe75b3c3c6f5be4f102", "city": "Tirana", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Migela Cani", "source": "multi-tier"}, {"country": "ALB", "name": "Petville Bllok", "venue_id": "66e85e674efd9a257621578e", "city": "Tirana", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Migela Cani", "source": "multi-tier"}, {"country": "ALB", "name": "Petville Brryli", "venue_id": "68c2cd9d51891121641ccf40", "city": "Tirana", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Migela Cani", "source": "multi-tier"}, {"country": "ALB", "name": "Petville Don Bosko", "venue_id": "678773d391d57e0ac8cc4c7e", "city": "Tirana", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Migela Cani", "source": "multi-tier"}, {"country": "ALB", "name": "Petville Fusha e Aviacionit", "venue_id": "68f89cb59863e10699c53742", "city": "Tirana", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Migela Cani", "source": "multi-tier"}, {"country": "ALB", "name": "Petville Liqeni", "venue_id": "66e85e674efd9a257621578f", "city": "Tirana", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Migela Cani", "source": "multi-tier"}, {"country": "ALB", "name": "Petville Liqeni i Thatë", "venue_id": "67efb4212dfbebd87fe053f7", "city": "Tirana", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Migela Cani", "source": "multi-tier"}, {"country": "ALB", "name": "Petville Oxhaku", "venue_id": "6852c7c6eb5773d4804098c7", "city": "Tirana", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Migela Cani", "source": "multi-tier"}, {"country": "ALB", "name": "Petville Qendër", "venue_id": "66e85e674efd9a2576215791", "city": "Tirana", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Migela Cani", "source": "multi-tier"}, {"country": "ALB", "name": "Petville Rr. e Kavajës", "venue_id": "66e85e674efd9a2576215790", "city": "Tirana", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Migela Cani", "source": "multi-tier"}, {"country": "ALB", "name": "Pizza Hut Teg", "venue_id": "664487eb96c982737278f417", "city": "Tirana", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Desara Pengili", "source": "multi-tier"}, {"country": "ALB", "name": "The Body Shop Galeria ETC", "venue_id": "67053cdf3ccdae17988574ae", "city": "Tirana", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Migela Cani", "source": "multi-tier"}, {"country": "ALB", "name": "Burger King Bllok", "venue_id": "665622ca62653d361e0f23db", "city": "Tirana", "bow_tier_num": 2, "bow_tier_name": "Great", "is_bow": false, "am": "Kulmita Hoxha", "source": "multi-tier"}, {"country": "ALB", "name": "Burger King Liqeni", "venue_id": "668f9a75f36a9b2d06a895dc", "city": "Tirana", "bow_tier_num": 2, "bow_tier_name": "Great", "is_bow": false, "am": "Kulmita Hoxha", "source": "multi-tier"}, {"country": "ALB", "name": "Burger King Ring Center", "venue_id": "694e7bea5b55a9d649549ca8", "city": "Tirana", "bow_tier_num": 2, "bow_tier_name": "Great", "is_bow": false, "am": "Kulmita Hoxha", "source": "multi-tier"}, {"country": "ALB", "name": "Burger King Rr. Barrikadave", "venue_id": "683da4f84c9133f7c09b74f8", "city": "Tirana", "bow_tier_num": 2, "bow_tier_name": "Great", "is_bow": false, "am": "Kulmita Hoxha", "source": "multi-tier"}, {"country": "ALB", "name": "Burger King Toptani", "venue_id": "665622ca62653d361e0f23dd", "city": "Tirana", "bow_tier_num": 2, "bow_tier_name": "Great", "is_bow": false, "am": "Kulmita Hoxha", "source": "multi-tier"}, {"country": "ALB", "name": "Conad Albania Bulevardi Zogu I", "venue_id": "67d28dc1957ef75dda30f0a0", "city": "Tirana", "bow_tier_num": 2, "bow_tier_name": "Great", "is_bow": false, "am": "Migela Cani", "source": "multi-tier"}, {"country": "ALB", "name": "L'Occitane Blloku", "venue_id": "688b5d7de581a19638e6830d", "city": "Tirana", "bow_tier_num": 2, "bow_tier_name": "Great", "is_bow": false, "am": "", "source": "multi-tier"}, {"country": "ALB", "name": "Lush Cosmetics Toptani", "venue_id": "68c3cd04c0d739c1faf7e11f", "city": "Tirana", "bow_tier_num": 2, "bow_tier_name": "Great", "is_bow": false, "am": "", "source": "multi-tier"}, {"country": "ALB", "name": "Neptun Hilton", "venue_id": "68526f0a78ca586e0191b33f", "city": "Tirana", "bow_tier_num": 2, "bow_tier_name": "Great", "is_bow": false, "am": "Migela Cani", "source": "multi-tier"}, {"country": "ALB", "name": "Neptun Profarma", "venue_id": "68c7c3e35783e735cffe824a", "city": "Tirana", "bow_tier_num": 2, "bow_tier_name": "Great", "is_bow": false, "am": "Migela Cani", "source": "multi-tier"}, {"country": "ALB", "name": "Petville TEG", "venue_id": "695cc8d88302134462cbafae", "city": "Tirana", "bow_tier_num": 2, "bow_tier_name": "Great", "is_bow": false, "am": "Migela Cani", "source": "multi-tier"}, {"country": "ALB", "name": "Big Market Piazza", "venue_id": "69a98d14d3ff42ab51b60703", "city": "Tirana", "bow_tier_num": 3, "bow_tier_name": "Standard", "is_bow": false, "am": "Migela Cani", "source": "multi-tier"}, {"country": "ALB", "name": "Conad Casa Italia", "venue_id": "69a7ffc482765cdac6a4ae26", "city": "Tirana", "bow_tier_num": 3, "bow_tier_name": "Standard", "is_bow": false, "am": "Migela Cani", "source": "multi-tier"}, {"country": "ALB", "name": "KFC Astir", "venue_id": "65eedef6b4edd603cff275fe", "city": "Tirana", "bow_tier_num": 3, "bow_tier_name": "Standard", "is_bow": false, "am": "Desara Pengili", "source": "multi-tier"}, {"country": "ALB", "name": "KFC Blloku", "venue_id": "65eede1e7affce3da641452b", "city": "Tirana", "bow_tier_num": 3, "bow_tier_name": "Standard", "is_bow": false, "am": "Desara Pengili", "source": "multi-tier"}, {"country": "ALB", "name": "KFC Delijorgji", "venue_id": "65eedd3273ed9327c40876c2", "city": "Tirana", "bow_tier_num": 3, "bow_tier_name": "Standard", "is_bow": false, "am": "Desara Pengili", "source": "multi-tier"}, {"country": "ALB", "name": "KFC Liqeni", "venue_id": "66448d5715b8df063b60fe25", "city": "Tirana", "bow_tier_num": 3, "bow_tier_name": "Standard", "is_bow": false, "am": "Desara Pengili", "source": "multi-tier"}, {"country": "ALB", "name": "KFC Park Gate", "venue_id": "65e9c6ffe968c6072db210cf", "city": "Tirana", "bow_tier_num": 3, "bow_tier_name": "Standard", "is_bow": false, "am": "Desara Pengili", "source": "multi-tier"}, {"country": "ALB", "name": "KFC QTU", "venue_id": "66f3d49837e1d9421174264c", "city": "Tirana", "bow_tier_num": 3, "bow_tier_name": "Standard", "is_bow": false, "am": "Desara Pengili", "source": "multi-tier"}, {"country": "ALB", "name": "KFC Rinas", "venue_id": "6925d7f84e126ddaa4feaec0", "city": "Tirana", "bow_tier_num": 3, "bow_tier_name": "Standard", "is_bow": false, "am": "Desara Pengili", "source": "multi-tier"}, {"country": "ALB", "name": "KFC TEG", "venue_id": "66448e4d15b8df063b60fe29", "city": "Tirana", "bow_tier_num": 3, "bow_tier_name": "Standard", "is_bow": false, "am": "Desara Pengili", "source": "multi-tier"}, {"country": "ALB", "name": "KFC Toptani", "venue_id": "6610063e8ff13d1395e1a218", "city": "Tirana", "bow_tier_num": 3, "bow_tier_name": "Standard", "is_bow": false, "am": "Desara Pengili", "source": "multi-tier"}, {"country": "ALB", "name": "Spar Juridiku", "venue_id": "698dac6bb362d218fe83a51a", "city": "Tirana", "bow_tier_num": 3, "bow_tier_name": "Standard", "is_bow": false, "am": "Migela Cani", "source": "multi-tier"}, {"country": "ALB", "name": "Spar Kombinat", "venue_id": "69a9a23d1245b93fac7ee172", "city": "Tirana", "bow_tier_num": 3, "bow_tier_name": "Standard", "is_bow": false, "am": "Migela Cani", "source": "multi-tier"}, {"country": "ALB", "name": "Spar Mine Peza", "venue_id": "69a9a1b6b005b671e0e1cbbc", "city": "Tirana", "bow_tier_num": 3, "bow_tier_name": "Standard", "is_bow": false, "am": "Migela Cani", "source": "multi-tier"}, {"country": "ALB", "name": "The Body Shop TEG", "venue_id": "698c467b3055a9f3b3f7b12a", "city": "Tirana", "bow_tier_num": 3, "bow_tier_name": "Standard", "is_bow": false, "am": "Migela Cani", "source": "multi-tier"}, {"country": "ALB", "name": "Yves Rocher TEG", "venue_id": "686f8714fa3ef1a5948b79be", "city": "Tirana", "bow_tier_num": 3, "bow_tier_name": "Standard", "is_bow": false, "am": "Migela Cani", "source": "multi-tier"}, {"country": "ALB", "name": "Yves Rocher Toptani", "venue_id": "686f899e2d611b3c6749e525", "city": "Tirana", "bow_tier_num": 3, "bow_tier_name": "Standard", "is_bow": false, "am": "Migela Cani", "source": "multi-tier"}, {"country": "ALB", "name": "Conad Liqeni", "venue_id": "67606bb48f740a7ba691f7e8", "city": "Tirana", "bow_tier_num": 4, "bow_tier_name": "Improve", "is_bow": false, "am": "Migela Cani", "source": "multi-tier"}, {"country": "ALB", "name": "L'Occitane TEG", "venue_id": "688b5d7de581a19638e6830c", "city": "Tirana", "bow_tier_num": 4, "bow_tier_name": "Improve", "is_bow": false, "am": "", "source": "multi-tier"}, {"country": "ALB", "name": "Lush Cosmetics (TEG)", "venue_id": "68da484f966bd6d23c38a320", "city": "Tirana", "bow_tier_num": 4, "bow_tier_name": "Improve", "is_bow": false, "am": "", "source": "multi-tier"}, {"country": "ALB", "name": "Neptun Kolonat", "venue_id": "68377ca7cd3bd1fc2b8599ce", "city": "Tirana", "bow_tier_num": 4, "bow_tier_name": "Improve", "is_bow": false, "am": "Migela Cani", "source": "multi-tier"}, {"country": "ALB", "name": "Neptun TEG", "venue_id": "68502fade91a0fdfa28e79af", "city": "Tirana", "bow_tier_num": 4, "bow_tier_name": "Improve", "is_bow": false, "am": "Migela Cani", "source": "multi-tier"}, {"country": "ALB", "name": "Yves Rocher 21 Dhjetori", "venue_id": "686f8ad3fa3ef1a5948b79c3", "city": "Tirana", "bow_tier_num": 4, "bow_tier_name": "Improve", "is_bow": false, "am": "Migela Cani", "source": "multi-tier"}, {"country": "ALB", "name": "Yves Rocher Blloku", "venue_id": "686f8891d24358db36543786", "city": "Tirana", "bow_tier_num": 4, "bow_tier_name": "Improve", "is_bow": false, "am": "Migela Cani", "source": "multi-tier"}, {"country": "ALB", "name": "Yves Rocher Selita", "venue_id": "68638dd21701ef6fdcd296f0", "city": "Tirana", "bow_tier_num": 4, "bow_tier_name": "Improve", "is_bow": false, "am": "Migela Cani", "source": "multi-tier"}, {"country": "ALB", "name": "Big Market Garden", "venue_id": "68e7e2b99bdde12a3e468d3e", "city": "Tirana", "bow_tier_num": 5, "bow_tier_name": "Limited", "is_bow": false, "am": "Migela Cani", "source": "multi-tier"}, {"country": "ALB", "name": "Pizza Hut Mine Peza", "venue_id": "660d20b5f07f6926daa04679", "city": "Tirana", "bow_tier_num": 5, "bow_tier_name": "Limited", "is_bow": false, "am": "Desara Pengili", "source": "multi-tier"}, {"country": "AZE", "name": "AVIS Арtek Ahmadli", "venue_id": "63205a17dc4a114c2d13a087", "city": "Baku", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Jamal Khalislamov", "source": "binary-bow"}, {"country": "AZE", "name": "AVIS Арtek Badamdar", "venue_id": "65c218a5a659979da2abd0de", "city": "Baku", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Jamal Khalislamov", "source": "binary-bow"}, {"country": "AZE", "name": "AVIS Арtek Fountain Square", "venue_id": "653a504ae6a2b7d5d5a6e684", "city": "Baku", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Jamal Khalislamov", "source": "binary-bow"}, {"country": "AZE", "name": "AVIS Арtek Nasimi", "venue_id": "653a4fdacac3cd9e2a9d639f", "city": "Baku", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Jamal Khalislamov", "source": "binary-bow"}, {"country": "AZE", "name": "AVIS Арtek Park Bulvar", "venue_id": "653a511bd4c42c16f622ac60", "city": "Baku", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Jamal Khalislamov", "source": "binary-bow"}, {"country": "AZE", "name": "AVIS Арtek Vurgun", "venue_id": "653a50c51ac3ff69c386e525", "city": "Baku", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Jamal Khalislamov", "source": "binary-bow"}, {"country": "AZE", "name": "AVIS Арtek White City", "venue_id": "65c0973c6bf25557113e705c", "city": "Baku", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Jamal Khalislamov", "source": "binary-bow"}, {"country": "AZE", "name": "Aloe Aptek Ag Sheher", "venue_id": "657192b79b9e104c5cf1f875", "city": "Baku", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Emil Baumvolf", "source": "binary-bow"}, {"country": "AZE", "name": "Aloe Aptek Sea Breeze", "venue_id": "664c451c2b6e4476f738ed5a", "city": "Baku", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Emil Baumvolf", "source": "binary-bow"}, {"country": "AZE", "name": "Buta Aptek - 28 May", "venue_id": "64228343c1bac7647f3944a1", "city": "Baku", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Emil Baumvolf", "source": "binary-bow"}, {"country": "AZE", "name": "Buta Aptek - 8 November str.", "venue_id": "64a6cc58039a4240e54d603b", "city": "Baku", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Emil Baumvolf", "source": "binary-bow"}, {"country": "AZE", "name": "Buta Aptek - Bayil", "venue_id": "644a264e953a673d00d7f712", "city": "Baku", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Emil Baumvolf", "source": "binary-bow"}, {"country": "AZE", "name": "Buta Aptek - Mardakan", "venue_id": "6274c48cf7fe3b36561999b0", "city": "Baku", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Emil Baumvolf", "source": "binary-bow"}, {"country": "AZE", "name": "Buta Aptek - Shuvalan", "venue_id": "6177d53205027921851e9a26", "city": "Baku", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Emil Baumvolf", "source": "binary-bow"}, {"country": "AZE", "name": "Gunabakhan Elmler Aptek", "venue_id": "63850338a4f00f51cd299d0b", "city": "Baku", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Aykhan Suleymanov", "source": "binary-bow"}, {"country": "AZE", "name": "KFC Badamdar", "venue_id": "5fb65947d473c2fe3a477ff9", "city": "Baku", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Aykhan Suleymanov", "source": "binary-bow"}, {"country": "AZE", "name": "Kanon Aptek Garayev", "venue_id": "67cec7974d5e32b5d965bdde", "city": "Baku", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Aykhan Suleymanov", "source": "binary-bow"}, {"country": "AZE", "name": "Kanon Aptek Online", "venue_id": "634e70fa5ff663b36fbe7928", "city": "Baku", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Aykhan Suleymanov", "source": "binary-bow"}, {"country": "AZE", "name": "Kanon Aptek Port Baku", "venue_id": "6622511129b3d56ad44eef5f", "city": "Baku", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Aykhan Suleymanov", "source": "binary-bow"}, {"country": "AZE", "name": "Kanon Aptek Semed Vurgun", "venue_id": "642d6edc66db5bd36b4b94e5", "city": "Baku", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Aykhan Suleymanov", "source": "binary-bow"}, {"country": "AZE", "name": "Kanon Aptek Statistika", "venue_id": "64eda180d6d3b77164f32b21", "city": "Baku", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Aykhan Suleymanov", "source": "binary-bow"}, {"country": "AZE", "name": "Kanon Aptek Xudu Mammadov", "venue_id": "67d03aec135c50410c9c79a9", "city": "Baku", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Aykhan Suleymanov", "source": "binary-bow"}, {"country": "AZE", "name": "Kanon Neftchilar Aptek", "venue_id": "638502289f4848c72ef7281b", "city": "Baku", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Aykhan Suleymanov", "source": "binary-bow"}, {"country": "AZE", "name": "Kanon Surakhani Aptek", "venue_id": "64c8daa1532fd318d39da603", "city": "Baku", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Aykhan Suleymanov", "source": "binary-bow"}, {"country": "AZE", "name": "Kanon-Bio Montin", "venue_id": "64ed9617406f80678055cf34", "city": "Baku", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Aykhan Suleymanov", "source": "binary-bow"}, {"country": "AZE", "name": "L'Occitane Yasamal", "venue_id": "65b0c1074a98f38a8682cd2e", "city": "Baku", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Isgandar Isgandarov", "source": "binary-bow"}, {"country": "AZE", "name": "Neptun Supermarket Xalqlar", "venue_id": "60fe5cc6297deb4370fba694", "city": "Baku", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Emil Baumvolf", "source": "binary-bow"}, {"country": "AZE", "name": "Pharmastore Aptek 561", "venue_id": "696deb5cc6d4d5270c893941", "city": "Baku", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Isgandar Isgandarov", "source": "binary-bow"}, {"country": "AZE", "name": "Pharmastore Aptek 90", "venue_id": "68ad9b83914f4d68b18f2de7", "city": "Baku", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Isgandar Isgandarov", "source": "binary-bow"}, {"country": "AZE", "name": "Pharmastore Aptek Ag Sheher", "venue_id": "67d2a0670a391d798d4e9436", "city": "Baku", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Isgandar Isgandarov", "source": "binary-bow"}, {"country": "AZE", "name": "Pharmastore Aptek Olimp", "venue_id": "634e56c160e0310185e06e1a", "city": "Baku", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Isgandar Isgandarov", "source": "binary-bow"}, {"country": "AZE", "name": "Pharmastore Qara Qarayev 202", "venue_id": "669e1237c339f2d703858c6d", "city": "Baku", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Isgandar Isgandarov", "source": "binary-bow"}, {"country": "AZE", "name": "Pizza Hut 28 May", "venue_id": "5ea6c3c6ad2c7666e2c7d3a5", "city": "Baku", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Aykhan Suleymanov", "source": "binary-bow"}, {"country": "AZE", "name": "Pizza Hut Caspian", "venue_id": "604a299fd487e0f40b30eb8d", "city": "Baku", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Aykhan Suleymanov", "source": "binary-bow"}, {"country": "AZE", "name": "Pizza Hut Jidir", "venue_id": "648c53575b04397e9a92c720", "city": "Baku", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Aykhan Suleymanov", "source": "binary-bow"}, {"country": "AZE", "name": "Pizza Hut Shuvalan", "venue_id": "6720ab3bd6defeda1abfde59", "city": "Baku", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Aykhan Suleymanov", "source": "binary-bow"}, {"country": "AZE", "name": "Pizza Hut Zoopark", "venue_id": "652e3aa1d88a67b32a30a276", "city": "Baku", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Aykhan Suleymanov", "source": "binary-bow"}, {"country": "AZE", "name": "SMOKING SHOP City Center", "venue_id": "63455c9847ea427925dee049", "city": "Baku", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Jamal Khalislamov", "source": "binary-bow"}, {"country": "AZE", "name": "SMOKING SHOP S.Vurgun", "venue_id": "65b0f9bed6269b50895f738f", "city": "Baku", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Jamal Khalislamov", "source": "binary-bow"}, {"country": "AZE", "name": "Vita Aptek Retro Buzovna", "venue_id": "65a8c495d113e24ffe43895a", "city": "Baku", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Emil Baumvolf", "source": "binary-bow"}, {"country": "AZE", "name": "Vita Aptek Sosial Nur 86", "venue_id": "664b4513ca26c8a9765f7eca", "city": "Baku", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Emil Baumvolf", "source": "binary-bow"}, {"country": "AZE", "name": "Zafaran 1 mkr.", "venue_id": "67d423286a65f09b38b3c9cc", "city": "Baku", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Aykhan Suleymanov", "source": "binary-bow"}, {"country": "AZE", "name": "Zafaran Aptek 7 Microdistrict", "venue_id": "6630ec5490867688b0e533ac", "city": "Baku", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Aykhan Suleymanov", "source": "binary-bow"}, {"country": "AZE", "name": "Zafaran Aptek Mohsun Sanani", "venue_id": "6622374b21f9a66c811cf04c", "city": "Baku", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Aykhan Suleymanov", "source": "binary-bow"}, {"country": "AZE", "name": "Zafaran Aptek Yasamal", "venue_id": "662781c6eb3c2f673b2ad340", "city": "Baku", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Aykhan Suleymanov", "source": "binary-bow"}, {"country": "AZE", "name": "Zafaran Aptek Yeni Yasamal", "venue_id": "66223dace12c386f18c7ef69", "city": "Baku", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Aykhan Suleymanov", "source": "binary-bow"}, {"country": "AZE", "name": "Zafaran Bakixanov 2", "venue_id": "67d42656b3e303750e91051a", "city": "Baku", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Aykhan Suleymanov", "source": "binary-bow"}, {"country": "AZE", "name": "Zafaran Mardakan Aptek", "venue_id": "6390a7a0275ab52fa0910283", "city": "Baku", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Aykhan Suleymanov", "source": "binary-bow"}, {"country": "AZE", "name": "Zafaran Nargiz Clinic Aptek", "venue_id": "693ac072b919009a5a32326e", "city": "Baku", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Aykhan Suleymanov", "source": "binary-bow"}, {"country": "AZE", "name": "Zafaran Yasamal 2", "venue_id": "67cedb03f7e82647fc65d1b8", "city": "Baku", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Aykhan Suleymanov", "source": "binary-bow"}, {"country": "CYP", "name": "Beauty Line Mall of Cyprus", "venue_id": "67bebd8302952a11efffdc81", "city": "Nicosia", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Michaella Valianti", "source": "multi-tier"}, {"country": "CYP", "name": "Beauty Line Nicosia Makariou Avenue", "venue_id": "681090e8f463fe59de148965", "city": "Nicosia", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Michaella Valianti", "source": "multi-tier"}, {"country": "CYP", "name": "Beauty Line Nicosia Mall", "venue_id": "685a5213ed2b3e17fa5243ba", "city": "Nicosia", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Michaella Valianti", "source": "multi-tier"}, {"country": "CYP", "name": "Berezka Store Engomi", "venue_id": "6925accdc60c4a0fb3945ffc", "city": "Nicosia", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Christos Chrysostomou", "source": "multi-tier"}, {"country": "CYP", "name": "Berezka Store Nicosia", "venue_id": "682c7c40349645e24fe6d0be", "city": "Nicosia", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Christos Chrysostomou", "source": "multi-tier"}, {"country": "CYP", "name": "Berezka Store Strovolos", "venue_id": "65799eff6a929f2697550f1b", "city": "Nicosia", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Christos Chrysostomou", "source": "multi-tier"}, {"country": "CYP", "name": "Bottles Wine & Spirit Nicosia", "venue_id": "655c65947e1fdc63677c20e9", "city": "Nicosia", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Christos Chrysostomou", "source": "multi-tier"}, {"country": "CYP", "name": "Dust + Cream Nicosia Mall", "venue_id": "6192491aa51262443a89724f", "city": "Nicosia", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Michaella Valianti", "source": "multi-tier"}, {"country": "CYP", "name": "Holland & Barrett Makariou", "venue_id": "66f3ec201972243a86c5b71f", "city": "Nicosia", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Michaella Valianti", "source": "multi-tier"}, {"country": "CYP", "name": "Holland & Barrett Mall of Cyprus", "venue_id": "67dd5a1f73d1253c7676b9c9", "city": "Nicosia", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Michaella Valianti", "source": "multi-tier"}, {"country": "CYP", "name": "Holland & Barrett Stavrou", "venue_id": "66df4139fa95885d09692d48", "city": "Nicosia", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Michaella Valianti", "source": "multi-tier"}, {"country": "CYP", "name": "Jamie Oliver's Diner", "venue_id": "60ed71b7f4ac88aa1fbb67bb", "city": "Nicosia", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "Jamie's Italian", "venue_id": "60e8148cd56190e40462f5bd", "city": "Nicosia", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "Korean Cosmetic Latsia", "venue_id": "65440f9c74935f06b7508dee", "city": "Nicosia", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Michaella Valianti", "source": "multi-tier"}, {"country": "CYP", "name": "Korean Cosmetic Nicosia", "venue_id": "650168f4d2de2a1517bc86a5", "city": "Nicosia", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Michaella Valianti", "source": "multi-tier"}, {"country": "CYP", "name": "Mr & Mrs Pet Nicosia", "venue_id": "68187e05b989af9999d8ba37", "city": "Nicosia", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Benjamin Vrochidis", "source": "multi-tier"}, {"country": "CYP", "name": "Papa Johns Pizza Aglatzia", "venue_id": "5f97b74eac2a25d9d17c3768", "city": "Nicosia", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Antria Drousiotou", "source": "multi-tier"}, {"country": "CYP", "name": "Papa Johns Pizza Dali", "venue_id": "64e884439d94e977aeddcc50", "city": "Nicosia", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Antria Drousiotou", "source": "multi-tier"}, {"country": "CYP", "name": "Papa Johns Pizza Engomi", "venue_id": "5f720faeed11390c261f98f8", "city": "Nicosia", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Antria Drousiotou", "source": "multi-tier"}, {"country": "CYP", "name": "Papa Johns Pizza Lakatamia", "venue_id": "5f6db21b91982cc4fc6d583d", "city": "Nicosia", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Antria Drousiotou", "source": "multi-tier"}, {"country": "CYP", "name": "Pasta Brava Kennedy", "venue_id": "6627968f952f776231004fae", "city": "Nicosia", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "Pet People Athalassas", "venue_id": "67765638b0cd3e0bb49d5bc0", "city": "Nicosia", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Benjamin Vrochidis", "source": "multi-tier"}, {"country": "CYP", "name": "Pet People Express", "venue_id": "646cbe6454aa23488b28eaf5", "city": "Nicosia", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Benjamin Vrochidis", "source": "multi-tier"}, {"country": "CYP", "name": "Pet People Nikolas Pet Supermarket", "venue_id": "64662c3f49e7ea7fa00ff0fc", "city": "Nicosia", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Benjamin Vrochidis", "source": "multi-tier"}, {"country": "CYP", "name": "Starbucks Engomi", "venue_id": "5e6f342e2ebe9887cfd6da36", "city": "Nicosia", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "Superhome Center Engomi", "venue_id": "68b80cb7a342b8febb59dea9", "city": "Nicosia", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Benjamin Vrochidis", "source": "multi-tier"}, {"country": "CYP", "name": "Superhome Center Strovolos", "venue_id": "67f8ebf410ba5f9925c84ebb", "city": "Nicosia", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Benjamin Vrochidis", "source": "multi-tier"}, {"country": "CYP", "name": "Tavernaki Mall of Cyprus", "venue_id": "612564e4f2e7ff68bd23fd33", "city": "Nicosia", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "Wagamama Themistokli Dervi", "venue_id": "6124a51a88b70f9a75388f8a", "city": "Nicosia", "bow_tier_num": 1, "bow_tier_name": "Best (BoW)", "is_bow": true, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "Berezka Cuisine Engomi", "venue_id": "6925a2694ac1abf7ca167678", "city": "Nicosia", "bow_tier_num": 2, "bow_tier_name": "Great", "is_bow": false, "am": "Christos Chrysostomou", "source": "multi-tier"}, {"country": "CYP", "name": "Berezka Cuisine Nicosia", "venue_id": "682d70352177facda2818323", "city": "Nicosia", "bow_tier_num": 2, "bow_tier_name": "Great", "is_bow": false, "am": "Christos Chrysostomou", "source": "multi-tier"}, {"country": "CYP", "name": "Burger King Acropoli", "venue_id": "60f3609821282d42e0adc6cd", "city": "Nicosia", "bow_tier_num": 2, "bow_tier_name": "Great", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "Burger King Engomi", "venue_id": "60f3616bb3a1b2f712adc85e", "city": "Nicosia", "bow_tier_num": 2, "bow_tier_name": "Great", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "Burger King Ledras", "venue_id": "60ec1ab41879d49639d967bb", "city": "Nicosia", "bow_tier_num": 2, "bow_tier_name": "Great", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "Burger King Mall of Cyprus", "venue_id": "60ff9a2b8127dadb252f0431", "city": "Nicosia", "bow_tier_num": 2, "bow_tier_name": "Great", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "Deli by Caffè Nero Eleftheria Square", "venue_id": "6752da6c11df9b3715eb079b", "city": "Nicosia", "bow_tier_num": 2, "bow_tier_name": "Great", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "Dodo Pizza Nicosia", "venue_id": "675c0ab02e1c8211dd024fef", "city": "Nicosia", "bow_tier_num": 2, "bow_tier_name": "Great", "is_bow": false, "am": "Antria Drousiotou", "source": "multi-tier"}, {"country": "CYP", "name": "Dust + Cream Mall of Cyprus", "venue_id": "6798a6a5c76a2b41a2d329d3", "city": "Nicosia", "bow_tier_num": 2, "bow_tier_name": "Great", "is_bow": false, "am": "Michaella Valianti", "source": "multi-tier"}, {"country": "CYP", "name": "Foodhaus Aglantzia", "venue_id": "612c98d52a572bb68888dedb", "city": "Nicosia", "bow_tier_num": 2, "bow_tier_name": "Great", "is_bow": false, "am": "Christos Chrysostomou", "source": "multi-tier"}, {"country": "CYP", "name": "Foodhaus Lakatamia", "venue_id": "612c9b4a40947b5a34ef1555", "city": "Nicosia", "bow_tier_num": 2, "bow_tier_name": "Great", "is_bow": false, "am": "Christos Chrysostomou", "source": "multi-tier"}, {"country": "CYP", "name": "Holland & Barrett Mall of Engomi", "venue_id": "66f3ead437e1d94211742675", "city": "Nicosia", "bow_tier_num": 2, "bow_tier_name": "Great", "is_bow": false, "am": "Michaella Valianti", "source": "multi-tier"}, {"country": "CYP", "name": "Holland & Barrett Nicosia Mall", "venue_id": "67dd2b84479b7524513b785e", "city": "Nicosia", "bow_tier_num": 2, "bow_tier_name": "Great", "is_bow": false, "am": "Michaella Valianti", "source": "multi-tier"}, {"country": "CYP", "name": "KFC Aglantzia", "venue_id": "61e6cfb2783de6b278a71533", "city": "Nicosia", "bow_tier_num": 2, "bow_tier_name": "Great", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "KFC Kokkinotrimithia", "venue_id": "65a51b03154f7254e6da68ec", "city": "Nicosia", "bow_tier_num": 2, "bow_tier_name": "Great", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "KFC Nikis", "venue_id": "61e6ca5905a1e8df81c07cc6", "city": "Nicosia", "bow_tier_num": 2, "bow_tier_name": "Great", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "McDonald's Athalassa", "venue_id": "6464ce580a991d132f91d52e", "city": "Nicosia", "bow_tier_num": 2, "bow_tier_name": "Great", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "McDonald's Engomi", "venue_id": "6464ce7af2dee546eccbc0ee", "city": "Nicosia", "bow_tier_num": 2, "bow_tier_name": "Great", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "McDonald's Lakatamia", "venue_id": "63f3951d32a622ba10f97a7b", "city": "Nicosia", "bow_tier_num": 2, "bow_tier_name": "Great", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "McDonald's Latsia", "venue_id": "6402225e88a829b7a2e3302b", "city": "Nicosia", "bow_tier_num": 2, "bow_tier_name": "Great", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "McDonald's Ledras", "venue_id": "63f3951d00c57b01a3b1b459", "city": "Nicosia", "bow_tier_num": 2, "bow_tier_name": "Great", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "McDonald's Pallouriotissa", "venue_id": "63d942e209c30b2211177cce", "city": "Nicosia", "bow_tier_num": 2, "bow_tier_name": "Great", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "PAUL Mall of Cyprus", "venue_id": "61090f5a70c1001183c6c5f1", "city": "Nicosia", "bow_tier_num": 2, "bow_tier_name": "Great", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "PAUL Zenas Kanther", "venue_id": "60fa7148e45c6da3a6b188c5", "city": "Nicosia", "bow_tier_num": 2, "bow_tier_name": "Great", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "Papa Johns Pizza Acropolis", "venue_id": "65aa1b6ad090fb71a236d6b2", "city": "Nicosia", "bow_tier_num": 2, "bow_tier_name": "Great", "is_bow": false, "am": "Antria Drousiotou", "source": "multi-tier"}, {"country": "CYP", "name": "Papa Johns Pizza Kokkinotrimithia", "venue_id": "669a0e236a15421b1542896b", "city": "Nicosia", "bow_tier_num": 2, "bow_tier_name": "Great", "is_bow": false, "am": "Antria Drousiotou", "source": "multi-tier"}, {"country": "CYP", "name": "Pizza Hut Kennedy", "venue_id": "6231db40bd0dec126f4d18a2", "city": "Nicosia", "bow_tier_num": 2, "bow_tier_name": "Great", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "Starbucks Centennial", "venue_id": "5e4540705a3e72c873b0ff79", "city": "Nicosia", "bow_tier_num": 2, "bow_tier_name": "Great", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "Superhome Center Lakatamia", "venue_id": "67dc2bdf25f07b5352cf0d82", "city": "Nicosia", "bow_tier_num": 2, "bow_tier_name": "Great", "is_bow": false, "am": "Benjamin Vrochidis", "source": "multi-tier"}, {"country": "CYP", "name": "Taco Bell Mall of Cyprus", "venue_id": "610942e62d79e0c9a7579b7e", "city": "Nicosia", "bow_tier_num": 2, "bow_tier_name": "Great", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "Wagamama Mall of Cyprus", "venue_id": "6124a08ffdce9e5eb1a4b4c4", "city": "Nicosia", "bow_tier_num": 2, "bow_tier_name": "Great", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "Wagamama Nicosia Mall", "venue_id": "676115f468e8805ea088f8ef", "city": "Nicosia", "bow_tier_num": 2, "bow_tier_name": "Great", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "Alion & More Nicosia", "venue_id": "62f0dd0505d950ec310373e3", "city": "Nicosia", "bow_tier_num": 3, "bow_tier_name": "Standard", "is_bow": false, "am": "Marilena Vlachou", "source": "multi-tier"}, {"country": "CYP", "name": "Berezka Cuisine Strovolos", "venue_id": "6579655f076097442f45706b", "city": "Nicosia", "bow_tier_num": 3, "bow_tier_name": "Standard", "is_bow": false, "am": "Christos Chrysostomou", "source": "multi-tier"}, {"country": "CYP", "name": "Burger King Nicosia Mall", "venue_id": "60ff99716ed654bd0f29472f", "city": "Nicosia", "bow_tier_num": 3, "bow_tier_name": "Standard", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "Caffè Nero Dali", "venue_id": "64b5183849f46768a1a2105e", "city": "Nicosia", "bow_tier_num": 3, "bow_tier_name": "Standard", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "Caffè Nero Engomi", "venue_id": "60ed4feb7e650bd22f8c2b33", "city": "Nicosia", "bow_tier_num": 3, "bow_tier_name": "Standard", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "Caffè Nero Strovolos Library", "venue_id": "60f2faad54d5ff2e295515e9", "city": "Nicosia", "bow_tier_num": 3, "bow_tier_name": "Standard", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "Dodo Pizza Aglantzia", "venue_id": "68d11fe116ed52cc543c8324", "city": "Nicosia", "bow_tier_num": 3, "bow_tier_name": "Standard", "is_bow": false, "am": "Antria Drousiotou", "source": "multi-tier"}, {"country": "CYP", "name": "Electroline Engomi", "venue_id": "680f6a8ee35a435718b55f91", "city": "Nicosia", "bow_tier_num": 3, "bow_tier_name": "Standard", "is_bow": false, "am": "Benjamin Vrochidis", "source": "multi-tier"}, {"country": "CYP", "name": "Electroline Kalamon", "venue_id": "6756ef53e820b42bec85e547", "city": "Nicosia", "bow_tier_num": 3, "bow_tier_name": "Standard", "is_bow": false, "am": "Benjamin Vrochidis", "source": "multi-tier"}, {"country": "CYP", "name": "Foodhaus Latsia", "venue_id": "612c9dae255d452f20f47379", "city": "Nicosia", "bow_tier_num": 3, "bow_tier_name": "Standard", "is_bow": false, "am": "Christos Chrysostomou", "source": "multi-tier"}, {"country": "CYP", "name": "KFC Dali", "venue_id": "64b5457fd1d4120f7a77ad18", "city": "Nicosia", "bow_tier_num": 3, "bow_tier_name": "Standard", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "KFC Engomi", "venue_id": "61e6d3166ed0710effe186d8", "city": "Nicosia", "bow_tier_num": 3, "bow_tier_name": "Standard", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "KFC Lakatamia", "venue_id": "61e6cb48c5aabf402cccbd27", "city": "Nicosia", "bow_tier_num": 3, "bow_tier_name": "Standard", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "KFC Latsia", "venue_id": "61e6ccef377c5b76662a8924", "city": "Nicosia", "bow_tier_num": 3, "bow_tier_name": "Standard", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "Kotsovolos Nicosia", "venue_id": "66ffd91ab5d1417c0c2a8da4", "city": "Nicosia", "bow_tier_num": 3, "bow_tier_name": "Standard", "is_bow": false, "am": "Benjamin Vrochidis", "source": "multi-tier"}, {"country": "CYP", "name": "METRO Express Aglantzia", "venue_id": "642159ab42017939e840c8c5", "city": "Nicosia", "bow_tier_num": 3, "bow_tier_name": "Standard", "is_bow": false, "am": "Christos Chrysostomou", "source": "multi-tier"}, {"country": "CYP", "name": "METRO Express Platy", "venue_id": "6228469d544fc2ff8020161f", "city": "Nicosia", "bow_tier_num": 3, "bow_tier_name": "Standard", "is_bow": false, "am": "Christos Chrysostomou", "source": "multi-tier"}, {"country": "CYP", "name": "METRO Express Strovolos", "venue_id": "62395dbc1f752436c849cf0d", "city": "Nicosia", "bow_tier_num": 3, "bow_tier_name": "Standard", "is_bow": false, "am": "Christos Chrysostomou", "source": "multi-tier"}, {"country": "CYP", "name": "Papa Johns Pizza Deftera", "venue_id": "6932f0fca15d3673ed37bb2c", "city": "Nicosia", "bow_tier_num": 3, "bow_tier_name": "Standard", "is_bow": false, "am": "Antria Drousiotou", "source": "multi-tier"}, {"country": "CYP", "name": "Pasta Brava Dali", "venue_id": "66545d260d839a8c4763b224", "city": "Nicosia", "bow_tier_num": 3, "bow_tier_name": "Standard", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "Pizza Hut Academias", "venue_id": "6231df4ef65cafe2ef6ccc45", "city": "Nicosia", "bow_tier_num": 3, "bow_tier_name": "Standard", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "Pizza Hut Dali", "venue_id": "64b0039ebe58e343630c385f", "city": "Nicosia", "bow_tier_num": 3, "bow_tier_name": "Standard", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "Pizza Hut Lakatamia", "venue_id": "6231e533612d2f3c51de7ea7", "city": "Nicosia", "bow_tier_num": 3, "bow_tier_name": "Standard", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "Pizza Hut Palouriotissa", "venue_id": "6231e27dc79af2113827a35a", "city": "Nicosia", "bow_tier_num": 3, "bow_tier_name": "Standard", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "Pizza Hut Strovolos", "venue_id": "60924008b0d93fde950fb6ac", "city": "Nicosia", "bow_tier_num": 3, "bow_tier_name": "Standard", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "Sklavenitis Engomi", "venue_id": "67288f66d9b16616fbf052bd", "city": "Nicosia", "bow_tier_num": 3, "bow_tier_name": "Standard", "is_bow": false, "am": "Christos Chrysostomou", "source": "multi-tier"}, {"country": "CYP", "name": "Starbucks Old Town", "venue_id": "5ebaa8cc777b08cb2533f3c6", "city": "Nicosia", "bow_tier_num": 3, "bow_tier_name": "Standard", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "Taco Bell Themistokli Dervi", "venue_id": "60f5477c6c67239afda2faef", "city": "Nicosia", "bow_tier_num": 3, "bow_tier_name": "Standard", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "Verde Nicosia Mall", "venue_id": "62690f8d7459264ed8b4865f", "city": "Nicosia", "bow_tier_num": 3, "bow_tier_name": "Standard", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "WingStreet Nicosia Mall", "venue_id": "6834203ca6e052815af8e762", "city": "Nicosia", "bow_tier_num": 3, "bow_tier_name": "Standard", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "WingStreet Strovolos", "venue_id": "66965a2562950af7da6b7b05", "city": "Nicosia", "bow_tier_num": 3, "bow_tier_name": "Standard", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "Caffè Nero Aglantzia", "venue_id": "60f2f8104ea3156b131d9f6e", "city": "Nicosia", "bow_tier_num": 4, "bow_tier_name": "Improve", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "Caffè Nero Elefteria Square", "venue_id": "6752d91c1c642577a4baa3fb", "city": "Nicosia", "bow_tier_num": 4, "bow_tier_name": "Improve", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "Caffè Nero Nicosia Mall", "venue_id": "60f2f5ab4ea3156b131d9a40", "city": "Nicosia", "bow_tier_num": 4, "bow_tier_name": "Improve", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "Foodhaus Agios Andreas", "venue_id": "612c9555fc0826f1e528a34b", "city": "Nicosia", "bow_tier_num": 4, "bow_tier_name": "Improve", "is_bow": false, "am": "Christos Chrysostomou", "source": "multi-tier"}, {"country": "CYP", "name": "Foodhaus Makedonitissa", "venue_id": "60e812073a7564420262ee17", "city": "Nicosia", "bow_tier_num": 4, "bow_tier_name": "Improve", "is_bow": false, "am": "Christos Chrysostomou", "source": "multi-tier"}, {"country": "CYP", "name": "Foodhaus Strovolos", "venue_id": "615e93d6d31f6c10e8ba62f2", "city": "Nicosia", "bow_tier_num": 4, "bow_tier_name": "Improve", "is_bow": false, "am": "Christos Chrysostomou", "source": "multi-tier"}, {"country": "CYP", "name": "Marks & Spencer Acropolis", "venue_id": "67f776c48d8747a66888d1cb", "city": "Nicosia", "bow_tier_num": 4, "bow_tier_name": "Improve", "is_bow": false, "am": "Marilena Vlachou", "source": "multi-tier"}, {"country": "CYP", "name": "Pasta Brava Aglatzia", "venue_id": "68346cfaf957ad9f08858d5e", "city": "Nicosia", "bow_tier_num": 4, "bow_tier_name": "Improve", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "Pasta Brava Kokkinotrimithia", "venue_id": "66545d26811f5a5ac7a3b17c", "city": "Nicosia", "bow_tier_num": 4, "bow_tier_name": "Improve", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "Pasta Brava Lakatamia", "venue_id": "6627742c90a7127fdc197db8", "city": "Nicosia", "bow_tier_num": 4, "bow_tier_name": "Improve", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "Pasta Brava Palouriotissa", "venue_id": "66278e566ac8161cec9ea7b4", "city": "Nicosia", "bow_tier_num": 4, "bow_tier_name": "Improve", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "Pizza Hut Agios Dometios", "venue_id": "6231d84d56522e615ee7e126", "city": "Nicosia", "bow_tier_num": 4, "bow_tier_name": "Improve", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "Pizza Hut Aglatzia", "venue_id": "6231e1325c68519ba2e6c295", "city": "Nicosia", "bow_tier_num": 4, "bow_tier_name": "Improve", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "Pizza Hut Deftera", "venue_id": "63f5eba782ddf60ce3f5a1d0", "city": "Nicosia", "bow_tier_num": 4, "bow_tier_name": "Improve", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "Pizza Hut Kokkinotrimithias", "venue_id": "65ae871ee7d70d1c3de30d8a", "city": "Nicosia", "bow_tier_num": 4, "bow_tier_name": "Improve", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "Pizza Hut Nicosia Mall", "venue_id": "6231ebfa222fcd8956ecc5f7", "city": "Nicosia", "bow_tier_num": 4, "bow_tier_name": "Improve", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "Starbucks Nicosia Mall", "venue_id": "60ed258a9681622349034fa7", "city": "Nicosia", "bow_tier_num": 4, "bow_tier_name": "Improve", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "Starbucks Stavrou", "venue_id": "6925b69cb7dac03b92fae60e", "city": "Nicosia", "bow_tier_num": 4, "bow_tier_name": "Improve", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "Starbucks Λατσιά", "venue_id": "5ebab80b68c7bf4d1b798eda", "city": "Nicosia", "bow_tier_num": 4, "bow_tier_name": "Improve", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "Taco Bell Nicosia Mall", "venue_id": "610944981ccd68e9290fb642", "city": "Nicosia", "bow_tier_num": 4, "bow_tier_name": "Improve", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "WingStreet Aglatzia", "venue_id": "6867c0c4b049c7c3d4b8d1a1", "city": "Nicosia", "bow_tier_num": 4, "bow_tier_name": "Improve", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "WingStreet Kennedy", "venue_id": "6863ce0d210b99f2397cfb63", "city": "Nicosia", "bow_tier_num": 4, "bow_tier_name": "Improve", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "WingStreet Kokkinotrimithia", "venue_id": "6863d9710bf83ddafa588a5d", "city": "Nicosia", "bow_tier_num": 4, "bow_tier_name": "Improve", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "WingStreet Pallouriotissa", "venue_id": "6863cd8fb67d896fdd6c79a0", "city": "Nicosia", "bow_tier_num": 4, "bow_tier_name": "Improve", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "Caffè Nero Mall of Cyprus", "venue_id": "60f2f7078f69af3f852be918", "city": "Nicosia", "bow_tier_num": 5, "bow_tier_name": "Limited", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "Deli by Caffè Nero Engomi", "venue_id": "66cd8b0e96bb722a3785c4b1", "city": "Nicosia", "bow_tier_num": 5, "bow_tier_name": "Limited", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "Deli by Caffè Nero Mall of Cyprus", "venue_id": "66cd890696bb722a3785c4ab", "city": "Nicosia", "bow_tier_num": 5, "bow_tier_name": "Limited", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "Marks & Spencer Nicosia Mall", "venue_id": "685516267e5cfd3b51eadcbe", "city": "Nicosia", "bow_tier_num": 5, "bow_tier_name": "Limited", "is_bow": false, "am": "Marilena Vlachou", "source": "multi-tier"}, {"country": "CYP", "name": "Marks & Spencer The Mall of Cyprus", "venue_id": "68552bb313e6d3e06584cf6a", "city": "Nicosia", "bow_tier_num": 5, "bow_tier_name": "Limited", "is_bow": false, "am": "Marilena Vlachou", "source": "multi-tier"}, {"country": "CYP", "name": "Pasta Brava Academias", "venue_id": "683460df819a91773d146b7c", "city": "Nicosia", "bow_tier_num": 5, "bow_tier_name": "Limited", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "Pasta Brava Agios Dometios", "venue_id": "68346b25eb45adab82ecd6e1", "city": "Nicosia", "bow_tier_num": 5, "bow_tier_name": "Limited", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "Pasta Brava Deutera", "venue_id": "662776d8952f776231004f5a", "city": "Nicosia", "bow_tier_num": 5, "bow_tier_name": "Limited", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "Pasta Brava Latsia", "venue_id": "66545d26bc2a5e34c13ce12c", "city": "Nicosia", "bow_tier_num": 5, "bow_tier_name": "Limited", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "Pasta Brava Nicosia Mall", "venue_id": "68346a1c472c8142b85a30cc", "city": "Nicosia", "bow_tier_num": 5, "bow_tier_name": "Limited", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "Pasta Brava Strovolos", "venue_id": "65e723edeec55c20133e946a", "city": "Nicosia", "bow_tier_num": 5, "bow_tier_name": "Limited", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "Pizza Hut Latsia", "venue_id": "6231e421fb7935a5548ef6a4", "city": "Nicosia", "bow_tier_num": 5, "bow_tier_name": "Limited", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "Tavernaki Nicosia Mall", "venue_id": "61091340c2f16f832a8d7f45", "city": "Nicosia", "bow_tier_num": 5, "bow_tier_name": "Limited", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "WingStreet Academias", "venue_id": "68341d1e819a91773d146aad", "city": "Nicosia", "bow_tier_num": 5, "bow_tier_name": "Limited", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "WingStreet Agios Dometios", "venue_id": "68341de0a6e052815af8e760", "city": "Nicosia", "bow_tier_num": 5, "bow_tier_name": "Limited", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "WingStreet Dali", "venue_id": "686b7abc5406f11bf7413d26", "city": "Nicosia", "bow_tier_num": 5, "bow_tier_name": "Limited", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "WingStreet Deutera", "venue_id": "687a2fec2e87e8825a2cbd64", "city": "Nicosia", "bow_tier_num": 5, "bow_tier_name": "Limited", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "WingStreet Lakatamia", "venue_id": "686b78ef1c144b8223460a50", "city": "Nicosia", "bow_tier_num": 5, "bow_tier_name": "Limited", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}, {"country": "CYP", "name": "WingStreet Latsia", "venue_id": "683420d8753ccb852684eaaf", "city": "Nicosia", "bow_tier_num": 5, "bow_tier_name": "Limited", "is_bow": false, "am": "Christodoulos Hadjinicolaou", "source": "multi-tier"}];
+
+const TIER_NAMES = {1:'Best (BoW)', 2:'Great', 3:'Standard', 4:'Improve', 5:'Limited'};
+const TIER_TOGGLE = {1:'0%', 2:'5%', 3:'20%', 4:'40%', 5:'60%'};
+// City-level avg commission rates from PRODUCTION benchmark data
+const CITY_CR = {'Tirana':0.2033, 'Nicosia':0.1925, 'Baku':0.2122};
+const BOW_GOLIVE = {'ALB':'2026-05-04','AZE':'2025-11-03','CYP':'2026-05-04','DEU':'2025-11-03','DNK':'2025-11-03','POL':'2025-11-03'};
+
+let sortCol = 0, sortAsc = true;
+let filteredVenues = [...VENUES];
+// Store editable GoV values per venue_id
+const govPre = {}, govPost = {};
+
+function renderStats() {
+  const byTier = {};
+  VENUES.filter(v=>v.source==='multi-tier').forEach(v=>{
+    byTier[v.bow_tier_num] = (byTier[v.bow_tier_num]||0)+1;
+  });
+  const bow = VENUES.filter(v=>v.is_bow).length;
+  const grid = document.getElementById('stats-grid');
+  grid.innerHTML = `
+    <div class="stat-card"><div class="stat-num" style="color:#2c3e50">${VENUES.length}</div><div class="stat-lbl">Total venues (partial)</div></div>
+    <div class="stat-card"><div class="stat-num tier-best">${bow}</div><div class="stat-lbl">BoW (Best / Yes)</div></div>
+    <div class="stat-card"><div class="stat-num" style="color:#2c3e50">3</div><div class="stat-lbl">Countries covered</div></div>
+    <div class="stat-card"><div class="stat-num" style="color:#2c3e50">May 4, 2026</div><div class="stat-lbl">Multi-tier go-live</div></div>
+    <div class="stat-card"><div class="stat-num" style="color:#2c3e50">44K</div><div class="stat-lbl">Global BoW venues</div></div>
+    <div class="stat-card"><div class="stat-num" style="color:#2c3e50">12</div><div class="stat-lbl">Markets at launch</div></div>
+  `;
+}
+
+function renderTierBar() {
+  const tiered = VENUES.filter(v=>v.source==='multi-tier');
+  const total = tiered.length;
+  const byTier = {};
+  tiered.forEach(v=>{ byTier[v.bow_tier_num]=(byTier[v.bow_tier_num]||0)+1; });
+  const colors = {1:'#FFD700',2:'#2ECC71',3:'#3498DB',4:'#E67E22',5:'#E74C3C'};
+  const bar = document.getElementById('tier-bar');
+  const leg = document.getElementById('tier-legend');
+  bar.innerHTML = [1,2,3,4,5].map(t=>{
+    const n = byTier[t]||0;
+    const pct = (n/total*100).toFixed(1);
+    return `<div class="tier-dist-seg" style="flex:${n};background:${colors[t]}" title="${TIER_NAMES[t]}: ${n} (${pct}%)">${n>4?n:''}</div>`;
+  }).join('');
+  leg.innerHTML = [1,2,3,4,5].map(t=>{
+    const n = byTier[t]||0;
+    return `<span style="display:inline-flex;align-items:center;gap:4px;"><span style="width:12px;height:12px;background:${colors[t]};border-radius:2px;display:inline-block;"></span>${TIER_NAMES[t]}: <b>${n}</b></span>`;
+  }).join('');
+}
+
+function renderTierMix() {
+  const tiered = VENUES.filter(v=>v.source==='multi-tier');
+  const total = tiered.length;
+  const byTier = {};
+  tiered.forEach(v=>{ byTier[v.bow_tier_num]=(byTier[v.bow_tier_num]||0)+1; });
+  // City CR: use simple average for venues
+  const cityVenues = {};
+  tiered.forEach(v=>{ if(!cityVenues[v.bow_tier_num]) cityVenues[v.bow_tier_num]=[]; cityVenues[v.bow_tier_num].push(v.city); });
+  const tbody = document.getElementById('tier-mix-tbody');
+  tbody.innerHTML = [1,2,3,4,5].map(t=>{
+    const n = byTier[t]||0;
+    const pct = (n/total*100).toFixed(1);
+    const cities = cityVenues[t]||[];
+    const crs = cities.map(c=>CITY_CR[c]).filter(Boolean);
+    const avgCR = crs.length ? (crs.reduce((a,b)=>a+b,0)/crs.length*100).toFixed(2)+'%' : 'N/A';
+    return `<tr><td><span class="tier-badge badge-${t}">${t}</span></td><td>${TIER_NAMES[t]}</td><td>${n}</td><td>${pct}%</td><td>${TIER_TOGGLE[t]}</td><td>${avgCR}</td></tr>`;
+  }).join('');
+}
+
+function applyFilters() {
+  const country = document.getElementById('filter-country').value;
+  const tier = document.getElementById('filter-tier').value;
+  const search = document.getElementById('search').value.toLowerCase();
+  const bowOnly = document.getElementById('bow-only').checked;
+  filteredVenues = VENUES.filter(v=>{
+    if(country && v.country !== country) return false;
+    if(tier && String(v.bow_tier_num) !== tier) return false;
+    if(search && !v.name.toLowerCase().includes(search)) return false;
+    if(bowOnly && !v.is_bow) return false;
+    return true;
+  });
+  renderTable();
+}
+
+function renderTable() {
+  const tbody = document.getElementById('venue-tbody');
+  document.getElementById('row-count').textContent = `${filteredVenues.length} venues`;
+  tbody.innerHTML = filteredVenues.map(v=>{
+    const pre = govPre[v.venue_id]||'';
+    const post = govPost[v.venue_id]||'';
+    let delta = '';
+    if(pre && post && !isNaN(+pre) && !isNaN(+post) && +pre > 0) {
+      const pct = ((+post - +pre) / +pre * 100).toFixed(1);
+      delta = `<span class="${+pct>=0?'pos-change':'neg-change'}">${+pct>=0?'+':''}${pct}%</span>`;
+    }
+    const goLive = BOW_GOLIVE[v.country] || '2026-05-04';
+    return `<tr>
+      <td>${v.country}</td>
+      <td><strong>${escHtml(v.name)}</strong></td>
+      <td class="venue-id"><a href="https://ops.wolt.com/venues/${v.venue_id}/info" target="_blank">${v.venue_id}</a></td>
+      <td>${v.city}</td>
+      <td><span class="tier-badge badge-${v.bow_tier_num}">${v.bow_tier_num} – ${v.bow_tier_name}</span></td>
+      <td>${escHtml(v.am||'')}</td>
+      <td class="input-cell"><input type="text" placeholder="e.g. Tier 2" data-vid="${v.venue_id}" data-field="wolt_tier"></td>
+      <td class="input-cell"><input type="number" step="0.01" placeholder="e.g. 22.5" data-vid="${v.venue_id}" data-field="cr" min="0" max="40"></td>
+      <td class="input-cell"><input type="number" placeholder="GoV pre" data-vid="${v.venue_id}" data-field="pre" oninput="updateGov(this)"></td>
+      <td class="input-cell"><input type="number" placeholder="GoV post" data-vid="${v.venue_id}" data-field="post" oninput="updateGov(this)"></td>
+      <td>${delta}</td>
+      <td>${goLive}</td>
+    </tr>`;
+  }).join('');
+}
+
+function updateGov(el) {
+  const vid = el.dataset.vid;
+  const field = el.dataset.field;
+  if(field==='pre') govPre[vid]=el.value;
+  if(field==='post') govPost[vid]=el.value;
+  // Update delta cell in same row
+  const row = el.closest('tr');
+  const pre = govPre[vid]||'';
+  const post = govPost[vid]||'';
+  const deltaCell = row.cells[10];
+  if(pre && post && !isNaN(+pre) && !isNaN(+post) && +pre > 0) {
+    const pct = ((+post - +pre) / +pre * 100).toFixed(1);
+    deltaCell.innerHTML = `<span class="${+pct>=0?'pos-change':'neg-change'}">${+pct>=0?'+':''}${pct}%</span>`;
+  } else { deltaCell.innerHTML = ''; }
+}
+
+function sortTable(col) {
+  if(sortCol===col) sortAsc=!sortAsc; else { sortCol=col; sortAsc=true; }
+  const keys = ['country','name','venue_id','city','bow_tier_num','am'];
+  if(col<keys.length) {
+    filteredVenues.sort((a,b)=>{
+      const av = a[keys[col]]||'', bv = b[keys[col]]||'';
+      return sortAsc ? (av<bv?-1:av>bv?1:0) : (av>bv?-1:av<bv?1:0);
+    });
+    renderTable();
+  }
+}
+
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function exportCSV() {
+  const header = ['Country','Venue Name','Venue ID','City','BoW Tier','BoW Tier Name','Is BoW','Account Manager','BoW Go-Live','City Avg CR%'];
+  const rows = filteredVenues.map(v=>[
+    v.country, v.name, v.venue_id, v.city, v.bow_tier_num, v.bow_tier_name,
+    v.is_bow?'Yes':'No', v.am||'',
+    BOW_GOLIVE[v.country]||'2026-05-04',
+    ((CITY_CR[v.city]||0)*100).toFixed(2)
+  ]);
+  const csv = [header,...rows].map(r=>r.map(c=>'"'+(String(c).replace(/"/g,'""'))+'"').join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = 'bow_venues_analysis.csv';
+  a.click();
+}
+
+function switchTab(id) {
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['overview','venues','tier-mix','how-to'][i]===id));
+  document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+}
+
+// Init
+renderStats();
+renderTierBar();
+renderTierMix();
+filteredVenues = [...VENUES];
+renderTable();
+document.getElementById('row-count').textContent = `${VENUES.length} venues`;
+</script>
+</body>
+</html>
